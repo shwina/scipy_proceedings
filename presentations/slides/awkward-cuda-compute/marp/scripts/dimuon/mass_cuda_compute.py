@@ -30,7 +30,7 @@ def compute_mass(mu1, mu2):
         # zip fields: 0 = pt, 1 = eta, 2 = phi, 3 = charge
         return (
             2 * m1[0] * m2[0] * (np.cosh(m1[1] - m2[1]) - np.cos(m1[2] - m2[2]))
-        ) ** 0.5          
+        ) ** 0.5
 
     # warm-up run:
     binary_transform(d_in1=d_in1, d_in2=d_in2, d_out=d_out, op=op, num_items=len(index1))

@@ -1,5 +1,16 @@
 # Generates the progressive-build Marp deck (Option B: bullets accumulate left, visual per bullet right)
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from deck_config import MACHINE, numbers
+
 OUT="/home/coder/scipy_proceedings/presentations/slides/awkward-cuda-compute/marp/slides.md"
+
+# machine-dependent measured numbers (results/<MACHINE>/numbers.json)
+N   = numbers()
+FA  = N["fusion_abssum"]
+AOT = N["aot"]
+ADL = N["adl"]
+DIM = N["dimuon"]
 
 def code(lang, src): return ("code", lang, src.strip("\n"))
 def img(path, w):     return ("img", path, w)
@@ -62,7 +73,8 @@ data = [[3.1, 1.4], [], [9.0, 0.5, 2.2]]
 ak.argmin(data, axis=1)   # [1, None, 1]
 """)),
  ("**Previous Awkward implementation**: a handwritten CUDA C++ kernel, three passes and about 150 lines",
-   code("cpp","""
+   multi(
+     code("cpp","""
 // awkward_reduce_argmin_b  (1 of 3 kernels)
 // per block reduce by parent, then combine block
 // winners across blocks with an atomic CAS retry loop:
@@ -78,9 +90,12 @@ while (true) {
     cur = prev;                     // lost race, retry
   } else break;
 }
-""")),
+"""),
+     note('<div class="note">the <b>atomicCAS</b> retry loop is subtle: correctness hinges on memory ordering, it is easy to introduce data races, and it is hard to reason about. `cuda.compute` hides this behind a tested primitive, so library authors never write it</div>'),
+   )),
  ("**Using cuda.compute**: the same reduction in a few lines of Python",
-   code("python","""
+   multi(
+     code("python","""
 # Awkward's cuda.compute ak.argmin, in full:
 def segment_argmin(seg_id):
     lo, hi = starts[seg_id], stops[seg_id]
@@ -91,7 +106,9 @@ def segment_argmin(seg_id):
 unary_transform(d_in=CountingIterator(0),
                 d_out=result, op=segment_argmin,
                 num_items=num_sublists)
-""")),
+"""),
+     note('<div class="note">one thread per sublist: a neat trick when sublists are <b>small</b>. For <b>large</b> sublists, use `segmented_reduce` (returns the global argmin index) then `lower_bound` to convert it to a local offset</div>'),
+   )),
  ("**Performance results**: identical output, and faster than the handwritten kernel",
    img("figs/bench_ak_argmin.png", 720)),
 ]))
@@ -99,8 +116,18 @@ unary_transform(d_in=CountingIterator(0),
 S.append(("`cuda.compute` features", [
  ("**Algorithms**: composable parallel building blocks (CUB and Thrust)",
    img("figs/algorithms.png", 680)),
- ("**Iterators**: lazy sequences that fuse a step in",
-   img("figs/iterators_seq.png", 680)),
+ ("**Iterators**: lazy sequences, computed on the fly, that fuse a step into the next algorithm",
+   multi(
+     img("figs/iterators_seq.png", 620),
+     code("python","""
+from cuda.compute import (CountingIterator, TransformIterator,
+                          ZipIterator, PermutationIterator)
+
+squares  = TransformIterator(CountingIterator(0), lambda i: i * i)
+pairs    = ZipIterator(values, index)          # (value, index) each
+gathered = PermutationIterator(values, order)  # values[order[i]], lazily
+"""),
+   )),
  ("**Computation with arbitrary data types**",
    code("python","""
 from cuda.compute import gpu_struct, reduce_into
@@ -130,7 +157,7 @@ def square(v): return v * v
 unary_transform(d_in=x, d_out=y, op=square, num_items=n)
 unary_transform(d_in=x, d_out=y, op=square, num_items=n)   # again
 """),
-     note('<div class="note">1st call <span class="slow">1077 ms</span>, JIT compiles &nbsp;·&nbsp; 2nd call <span class="fast">0.27 ms</span>, cached</div>'),
+     note(f'<div class="note">1st call <span class="slow">{AOT["jit_first_ms"]} ms</span>, JIT compiles &nbsp;·&nbsp; 2nd call <span class="fast">{AOT["jit_cached_ms"]} ms</span>, cached</div>'),
      note('<div class="aot-h aot-gap">Ahead of time: compile once, reuse</div>'),
      code("python","""
 from cuda.compute import make_unary_transform, serialize
@@ -138,14 +165,14 @@ from cuda.compute import make_unary_transform, serialize
 alg = make_unary_transform(d_in=x, d_out=y, op=square)
 open("square.cccl", "wb").write(serialize(alg))
 """),
-     note('<div class="note"><b>serialize</b> the compiled kernel → a <b>142 KB</b> blob on disk</div>'),
+     note(f'<div class="note"><b>serialize</b> the compiled kernel → a <b>{AOT["blob_kb"]} KB</b> blob on disk</div>'),
      code("python","""
 from cuda.compute import deserialize     # a later session
 
 alg = deserialize(open("square.cccl", "rb").read())
 alg(d_in=x, d_out=y, op=square, num_items=n)
 """),
-     note('<div class="note"><b>deserialize</b> → 1st call <span class="fast">3.8 ms</span> (<b>no JIT</b>) &nbsp;·&nbsp; 2nd call <span class="fast">0.21 ms</span>, cached</div>'),
+     note(f'<div class="note"><b>deserialize</b> → 1st call <span class="fast">{AOT["deser_first_ms"]} ms</span> (<b>no JIT</b>) &nbsp;·&nbsp; 2nd call <span class="fast">{AOT["deser_cached_ms"]} ms</span>, cached</div>'),
    )),
 ]))
 
@@ -154,21 +181,21 @@ S.append(("Kernel fusion", [
    img("figs/kernel_passes.png", 820)),
  ("**Implicit vs explicit fusion**: `|x|` then `sum`, without materializing the intermediate (100M values)",
    multi(
-     note('<div class="aot-h">eager: materialize the intermediate</div>'),
-     code("python","y = torch.abs(x).sum()"),
-     note('<div class="note"><span class="slow">2 kernels · 2.9 ms</span> &nbsp; writes `|x|` to memory, reads it back: 3x the traffic</div>'),
+     note('<div class="aot-h">eager (cupy): materialize the intermediate</div>'),
+     code("python","y = cp.abs(x).sum()"),
+     note(f'<div class="note"><span class="slow">{FA["eager_cupy"]["kernels"]} kernels · {FA["eager_cupy"]["ms"]} ms</span> &nbsp; `abs` writes `|x|` to memory, `sum` reads it back: 3x the traffic. <b>cupy is unfused today; it will fuse as it moves onto cuda.compute</b></div>'),
      note('<div class="aot-h aot-gap">implicit fusion (torch.compile)</div>'),
      code("python","""
 @torch.compile
 def abs_sum(x): return torch.abs(x).sum()
 """),
-     note('<div class="note"><span class="fast">2 kernels · 0.93 ms</span> &nbsp; a compiler decides what fuses</div>'),
+     note(f'<div class="note"><span class="fast">{FA["torch_compile"]["kernels"]} kernels · {FA["torch_compile"]["ms"]} ms</span> &nbsp; a compiler decides what fuses</div>'),
      note('<div class="aot-h aot-gap">explicit fusion (cuda.compute)</div>'),
      code("python","""
 absx = TransformIterator(x, lambda v: abs(v))
 reduce_into(d_in=absx, d_out=out, op=OpKind.PLUS, ...)
 """),
-     note('<div class="note"><span class="fast">2 kernels · 0.93 ms</span> &nbsp; you compose the fusion, on any data</div>'),
+     note(f'<div class="note"><span class="fast">{FA["cuda_compute"]["kernels"]} kernels · {FA["cuda_compute"]["ms"]} ms</span> &nbsp; you compose the fusion, on any data</div>'),
    )),
  ("**A real workflow**: dimuon invariant mass, one line of Awkward",
    multi(
@@ -187,21 +214,23 @@ mass = np.sqrt(
      code("python","""
 @gpu_struct
 class Muon:
-    pt: float32; eta: float32
-    phi: float32; charge: int32
+    pt: float32; eta: float32; phi: float32; charge: int32
 
 def mass(m1, m2):
-    return (2 * m1.pt * m2.pt
-        * (cosh(m1.eta - m2.eta)
-         - cos (m1.phi - m2.phi))) ** 0.5
+    return (2 * m1.pt * m2.pt * (cosh(m1.eta - m2.eta)
+                              -  cos(m1.phi - m2.phi))) ** 0.5
+
+# gather each field by pair index, zip into a Muon: all lazy
+muons1 = PermutationIterator(ZipIterator(pt1, eta1, phi1, q1), idx1)
+muons2 = PermutationIterator(ZipIterator(pt2, eta2, phi2, q2), idx2)
 
 binary_transform(d_in1=muons1, d_in2=muons2,
                  d_out=out, op=mass, num_items=n)
 """),
      note('<div class="note">one fused kernel over zipped, permuted iterators: no intermediates in memory</div>'),
    )),
- ("**The measured GPU timeline**: 88 kernels become 1, **2.9x faster**",
-   img("figs/dimuon_timeline.png", 940)),
+ (f'**The measured GPU timeline**: 88 kernels become 1, **{DIM["speedup_x"]}x faster**',
+   img("figs/dimuon_timeline.png", 980)),
 ]))
 
 S.append(("Awkward Array: present and future", [
@@ -223,8 +252,8 @@ segmented_reduce(
    )),
  ("**Awkward on CUDA is now even faster**",
    multi(
-     img("figs/adl_speedup_panel.png", 880),
-     note('<div class="note">since the move to `cuda.compute`, Awkward matches or beats the handwritten kernels on the ADL benchmark queries: up to <b>1485x</b> on the GPU compute stage, and queries the old backend could not finish now run in seconds</div>'),
+     img("figs/adl_speedup_panel.png", 940),
+     note(f'<div class="note">GPU compute stage vs the handwritten kernels, across the ADL physics queries. The <b>combinatoric</b> queries (Q5, Q6) win biggest, <b>up to {ADL["max_compute_speedup_x"]}x</b>, because they are compute dominated and fuse into single passes. The <b>light</b> queries (Q3, Q4, Q7) still win {ADL["light_low_x"]} to {ADL["light_high_x"]}x but are read bound end to end. Q8 <b>never finished</b> on the old backend; it now runs in about a second. The wins hold from 100k to 10M events</div>'),
    )),
  ("**What is next: lazy execution**",
    multi(

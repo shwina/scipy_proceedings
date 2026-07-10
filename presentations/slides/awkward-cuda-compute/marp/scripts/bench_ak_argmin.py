@@ -27,9 +27,26 @@ MAX_LEN   = 16                 # sublist lengths drawn from [0, MAX_LEN)
 REPS      = 30
 BLOCK     = 256
 HERE      = os.path.dirname(os.path.abspath(__file__))
-AWKWARD   = os.environ.get("AWKWARD_SRC", "/home/coder/awkward")
-COMMON_CU = os.path.join(AWKWARD, "src/awkward/_connect/cuda/cuda_kernels/cuda_common.cu")
 ARGMIN_CU = os.path.join(HERE, "awkward_reduce_argmin.cu")
+
+
+def _find_cuda_common():
+    """cuda_common.cu ships inside the installed awkward package; a source
+    checkout (AWKWARD_SRC) is only a fallback."""
+    import awkward
+    inst = os.path.join(os.path.dirname(awkward.__file__),
+                        "_connect", "cuda", "cuda_kernels", "cuda_common.cu")
+    if os.path.exists(inst):
+        return inst
+    src = os.environ.get("AWKWARD_SRC")
+    if src:
+        p = os.path.join(src, "src/awkward/_connect/cuda/cuda_kernels/cuda_common.cu")
+        if os.path.exists(p):
+            return p
+    raise FileNotFoundError("cuda_common.cu not found in installed awkward or AWKWARD_SRC")
+
+
+COMMON_CU = _find_cuda_common()
 
 ERROR_BITS = 8
 NO_ERROR   = int(np.iinfo(np.uint64).max)

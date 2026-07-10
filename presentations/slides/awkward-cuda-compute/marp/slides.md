@@ -538,12 +538,21 @@ reduce_into(d_in=squares, d_out=out, num_items=n,
 <div>
 
 - <span class="past">**Algorithms**: composable parallel building blocks (CUB and Thrust)</span>
-- <span class="cur">**Iterators**: lazy sequences that fuse a step in</span>
+- <span class="cur">**Iterators**: lazy sequences, computed on the fly, that fuse a step into the next algorithm</span>
 
 </div>
 <div>
 
-![w:680](figs/iterators_seq.png)
+![w:620](figs/iterators_seq.png)
+
+```python
+from cuda.compute import (CountingIterator, TransformIterator,
+                          ZipIterator, PermutationIterator)
+
+squares  = TransformIterator(CountingIterator(0), lambda i: i * i)
+pairs    = ZipIterator(values, index)          # (value, index) each
+gathered = PermutationIterator(values, order)  # values[order[i]], lazily
+```
 
 </div>
 </div>
@@ -557,7 +566,7 @@ reduce_into(d_in=squares, d_out=out, num_items=n,
 <div>
 
 - <span class="past">**Algorithms**: composable parallel building blocks (CUB and Thrust)</span>
-- <span class="past">**Iterators**: lazy sequences that fuse a step in</span>
+- <span class="past">**Iterators**: lazy sequences, computed on the fly, that fuse a step into the next algorithm</span>
 - <span class="cur">**Computation with arbitrary data types**</span>
 
 </div>
@@ -593,7 +602,7 @@ reduce_into(d_in=d_rgb, d_out=out, num_items=n,
 <div>
 
 - <span class="past">**Algorithms**: composable parallel building blocks (CUB and Thrust)</span>
-- <span class="past">**Iterators**: lazy sequences that fuse a step in</span>
+- <span class="past">**Iterators**: lazy sequences, computed on the fly, that fuse a step into the next algorithm</span>
 - <span class="past">**Computation with arbitrary data types**</span>
 - <span class="cur">**JIT by default. Supports ahead-of-time compilation workflows.**</span>
 
@@ -711,6 +720,8 @@ while (true) {
 }
 ```
 
+<div class="note">the <b>atomicCAS</b> retry loop is subtle: correctness hinges on memory ordering, it is easy to introduce data races, and it is hard to reason about. `cuda.compute` hides this behind a tested primitive, so library authors never write it</div>
+
 </div>
 </div>
 
@@ -742,6 +753,8 @@ unary_transform(d_in=CountingIterator(0),
                 d_out=result, op=segment_argmin,
                 num_items=num_sublists)
 ```
+
+<div class="note">one thread per sublist: a neat trick when sublists are <b>small</b>. For <b>large</b> sublists, use `segmented_reduce` (returns the global argmin index) then `lower_bound` to convert it to a local offset</div>
 
 </div>
 </div>
@@ -800,13 +813,13 @@ unary_transform(d_in=CountingIterator(0),
 </div>
 <div>
 
-<div class="aot-h">eager: materialize the intermediate</div>
+<div class="aot-h">eager (cupy): materialize the intermediate</div>
 
 ```python
-y = torch.abs(x).sum()
+y = cp.abs(x).sum()
 ```
 
-<div class="note"><span class="slow">2 kernels · 2.9 ms</span> &nbsp; writes `|x|` to memory, reads it back: 3x the traffic</div>
+<div class="note"><span class="slow">3 kernels · 2.9 ms</span> &nbsp; `abs` writes `|x|` to memory, `sum` reads it back: 3x the traffic. <b>cupy is unfused today; it will fuse as it moves onto cuda.compute</b></div>
 
 <div class="aot-h aot-gap">implicit fusion (torch.compile)</div>
 
@@ -877,13 +890,15 @@ mass = np.sqrt(
 ```python
 @gpu_struct
 class Muon:
-    pt: float32; eta: float32
-    phi: float32; charge: int32
+    pt: float32; eta: float32; phi: float32; charge: int32
 
 def mass(m1, m2):
-    return (2 * m1.pt * m2.pt
-        * (cosh(m1.eta - m2.eta)
-         - cos (m1.phi - m2.phi))) ** 0.5
+    return (2 * m1.pt * m2.pt * (cosh(m1.eta - m2.eta)
+                              -  cos(m1.phi - m2.phi))) ** 0.5
+
+# gather each field by pair index, zip into a Muon: all lazy
+muons1 = PermutationIterator(ZipIterator(pt1, eta1, phi1, q1), idx1)
+muons2 = PermutationIterator(ZipIterator(pt2, eta2, phi2, q2), idx2)
 
 binary_transform(d_in1=muons1, d_in2=muons2,
                  d_out=out, op=mass, num_items=n)
@@ -911,7 +926,7 @@ binary_transform(d_in1=muons1, d_in2=muons2,
 </div>
 <div>
 
-![w:940](figs/dimuon_timeline.png)
+![w:980](figs/dimuon_timeline.png)
 
 </div>
 </div>
@@ -979,9 +994,9 @@ segmented_reduce(
 </div>
 <div>
 
-![w:880](figs/adl_speedup_panel.png)
+![w:940](figs/adl_speedup_panel.png)
 
-<div class="note">since the move to `cuda.compute`, Awkward matches or beats the handwritten kernels on the ADL benchmark queries: up to <b>1485x</b> on the GPU compute stage, and queries the old backend could not finish now run in seconds</div>
+<div class="note">GPU compute stage vs the handwritten kernels, across the ADL physics queries. The <b>combinatoric</b> queries (Q5, Q6) win biggest, <b>up to 1509x</b>, because they are compute dominated and fuse into single passes. The <b>light</b> queries (Q3, Q4, Q7) still win 4 to 44x but are read bound end to end. Q8 <b>never finished</b> on the old backend; it now runs in about a second. The wins hold from 100k to 10M events</div>
 
 </div>
 </div>

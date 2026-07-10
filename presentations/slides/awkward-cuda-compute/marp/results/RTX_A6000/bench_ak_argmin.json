@@ -1,0 +1,9 @@
+{
+  "device": "NVIDIA RTX 6000 Ada Generation",
+  "num_segments": 5000000,
+  "n_elements": 37508050,
+  "reps": 30,
+  "before_ms": 1.424,
+  "after_ms": 0.659,
+  "agree": true
+}

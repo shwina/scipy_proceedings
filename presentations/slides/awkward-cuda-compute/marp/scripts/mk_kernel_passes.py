@@ -12,7 +12,7 @@ fig, ax = plt.subplots(figsize=(11, 4.9))
 ax.set_xlim(0, 14); ax.set_ylim(0, 9); ax.axis("off")
 
 ax.text(7, 8.55, "Separate kernels each round trip through global memory",
-        ha="center", fontsize=15, fontweight="bold", color=INK)
+        ha="center", fontsize=18.0, fontweight="bold", color=INK)
 
 # ---- three generic kernel boxes ----
 boxes = [(0.6, "Kernel 1"), (5.15, "Kernel 2"), (9.7, "Kernel 3")]
@@ -21,20 +21,20 @@ for x, label in boxes:
     ax.add_patch(FancyBboxPatch((x, BY), BW, BH, boxstyle="round,pad=0.02,rounding_size=0.12",
                                 fc=LGREY, ec=GREY, lw=2))
     ax.text(x + BW/2, BY + BH/2, label, ha="center", va="center",
-            fontsize=15, fontweight="bold", color=INK)
+            fontsize=18.0, fontweight="bold", color=INK)
 
 # launch + sync between kernels
 for xsep in (4.55, 9.1):
     ax.plot([xsep, xsep], [BY-0.35, BY+BH+0.35], ls=(0, (2, 2)), color=GREY, lw=1.4)
     ax.text(xsep, BY+BH+0.72, "launch\n+ sync", ha="center", va="center",
-            fontsize=10, color=GREY, linespacing=1.15)
+            fontsize=12.0, color=GREY, linespacing=1.15)
 
 # ---- global memory bar ----
 MY, MH = 1.0, 1.35
 ax.add_patch(FancyBboxPatch((0.6, MY), 12.8, MH, boxstyle="round,pad=0.02,rounding_size=0.10",
                             fc=LORANGE, ec=RED, lw=2))
 ax.text(7, MY + MH/2, "GPU global memory", ha="center", va="center",
-        fontsize=14, fontweight="bold", color=RED)
+        fontsize=16.8, fontweight="bold", color=RED)
 
 # ---- write / read round-trip arrows for every kernel ----
 def arrow(x0, y0, x1, y1):
@@ -45,9 +45,9 @@ for i, (x, _) in enumerate(boxes):
     arrow(cx-0.55, BY, cx-0.55, MY+MH)   # write down
     arrow(cx+0.55, MY+MH, cx+0.55, BY)   # read up
 ax.text(boxes[0][0]+BW/2-1.35, (BY+MY+MH)/2, "write", ha="right", va="center",
-        fontsize=11, color=RED, fontweight="bold")
+        fontsize=13.2, color=RED, fontweight="bold")
 ax.text(boxes[0][0]+BW/2+1.35, (BY+MY+MH)/2, "read", ha="left", va="center",
-        fontsize=11, color=RED, fontweight="bold")
+        fontsize=13.2, color=RED, fontweight="bold")
 
 fig.savefig(f"{OUT}/kernel_passes.png"); plt.close(fig)
 print("wrote figs/kernel_passes.png")

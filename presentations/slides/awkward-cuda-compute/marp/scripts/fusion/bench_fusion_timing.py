@@ -26,7 +26,8 @@ if sys.argv[1] == "cc":
         kw = {} if det is None else {"determinism": det}
         reduce_into(d_in=it, d_out=out, num_items=N, op=OpKind.PLUS, h_init=h0, **kw)
     sync = cp.cuda.Stream.null.synchronize
-    rows = [("cuda.compute abs (2 kern)", lambda: red(absx)),
+    rows = [("cupy eager abs (3 kern)",   lambda: cp.abs(xc).sum()),   # unfused baseline
+            ("cuda.compute abs (2 kern)", lambda: red(absx)),
             ("cuda.compute abs (1 kern)", lambda: red(absx, G)),
             ("cuda.compute exp (1 kern)", lambda: red(expxy, G))]
 else:

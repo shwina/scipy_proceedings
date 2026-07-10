@@ -1,0 +1,36 @@
+{
+  "device": "NVIDIA RTX 6000 Ada Generation",
+  "fusion_abssum": {
+    "eager_cupy": {
+      "kernels": 3,
+      "ms": "2.9"
+    },
+    "torch_compile": {
+      "kernels": 2,
+      "ms": "0.93"
+    },
+    "cuda_compute": {
+      "kernels": 2,
+      "ms": "0.93"
+    }
+  },
+  "aot": {
+    "jit_first_ms": "1077",
+    "jit_cached_ms": "0.27",
+    "blob_kb": "142",
+    "deser_first_ms": "3.8",
+    "deser_cached_ms": "0.21"
+  },
+  "dimuon": {
+    "speedup_x": "2.9"
+  },
+  "adl": {
+    "max_compute_speedup_x": "1509",
+    "light_low_x": "4",
+    "light_high_x": "44"
+  },
+  "argmin": {
+    "before_ms": "1.424",
+    "after_ms": "0.659"
+  }
+}

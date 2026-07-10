@@ -15,12 +15,16 @@ full_text.pdf
 __pycache__/
 *.nsys-rep
 *.sqlite
+.venv/
+.venv-*/
 
 # awkward-cuda-compute talk: generated build artifacts
 # (deck is rebuilt from scripts/*.py -> slides.md -> slides.pdf; figs/*.png and
 #  slides.md are kept as tracked deck content, since some figures need a GPU to regenerate)
 presentations/slides/awkward-cuda-compute/marp/slides.pdf
-presentations/slides/awkward-cuda-compute/**/*.json
+# transient benchmark json in scripts/ is regenerable; the curated per-machine
+# results (results/<MACHINE>/*.json) ARE tracked (the paper's data).
+presentations/slides/awkward-cuda-compute/marp/scripts/**/*.json
 
 # awkward-cuda-compute talk: previous / reference presentations (not part of the build)
 presentations/slides/awkward-cuda-compute/*.pptx
