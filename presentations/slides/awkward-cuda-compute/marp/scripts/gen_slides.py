@@ -327,5 +327,28 @@ for title,bullets in S:
 </div>
 """)
 
-open(OUT,"w").write("\n".join(parts))
-print("wrote", OUT)
+# ---- write ----
+# slides.md is co-authored: Ianna's intro and outro live in the same file, wrapped
+# around Ashwin's section. So we splice ONLY Ashwin's part between the markers below
+# and never rewrite the whole file (which would delete Ianna's slides).
+import os, re
+BEGIN = "<!-- ASHWIN:BEGIN -->"
+END   = "<!-- ASHWIN:END -->"
+ashwin_body = "\n".join(parts[1:]).strip("\n")     # parts[0] is HEAD (frontmatter + title)
+block = f"{BEGIN}\n\n{ashwin_body}\n\n{END}"
+
+if os.path.exists(OUT):
+    existing = open(OUT).read()
+    if BEGIN in existing and END in existing:
+        new = re.sub(re.escape(BEGIN) + r".*?" + re.escape(END),
+                     lambda _m: block, existing, count=1, flags=re.S)
+        open(OUT, "w").write(new)
+        print("spliced Ashwin's section into", OUT, "(surrounding content, incl. Ianna's slides, untouched)")
+    else:
+        raise SystemExit(
+            f"REFUSING to overwrite {OUT}: it exists but has no {BEGIN} / {END} markers.\n"
+            f"That file may hold other authors' slides. Add the markers around Ashwin's "
+            f"section, or delete slides.md to regenerate a fresh standalone deck.")
+else:
+    open(OUT, "w").write(f"{HEAD}\n{block}\n")
+    print("wrote fresh standalone", OUT, "(with ASHWIN markers for future splicing)")

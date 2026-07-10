@@ -382,6 +382,7 @@ section.challenge h1 {
 
 ---
 
+<!-- ASHWIN:BEGIN -->
 
 ## What is `cuda.compute`?
 
@@ -397,6 +398,7 @@ section.challenge h1 {
 
 </div>
 </div>
+
 
 ---
 
@@ -1015,6 +1017,8 @@ expr.compute(fuse=True)      # whole chain -> ONE kernel
 
 </div>
 </div>
+
+<!-- ASHWIN:END -->
 
 ---
 
