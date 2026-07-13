@@ -34,7 +34,7 @@ ax.annotate("", xy=(DONE + REMAIN/2, y+h+0.05), xytext=(DONE + REMAIN/2, y+h+1.9
             arrowprops=dict(arrowstyle="-", color=DGREY, lw=1))
 
 # caption
-ax.text(0, 1.35, "103 of 120 kernel migrations complete  ·  reductions, scans and sorts: 100%",
+ax.text(0, 1.35, "103 of 120 kernel migrations complete",
         fontsize=12.6, color=DGREY)
 ax.text(0, 0.5, "scikit-hep/awkward  issue #3793", fontsize=11.4, color=GREY, style="italic")
 

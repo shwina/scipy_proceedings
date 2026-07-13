@@ -25,11 +25,11 @@ fig.savefig(f"{OUT}/ecosystem.png"); plt.close(fig)
 
 # 1.3 abstraction spectrum
 fig,ax=plt.subplots(figsize=(10,2.4)); ax.set_xlim(0,10); ax.set_ylim(0,2.4); ax.axis("off")
-box(ax,0.2,0.9,3.0,1.0,"NumPy · CuPy","PyTorch · JAX",fc=LBLUE,ec=BLUE,fs=14.4)
+box(ax,0.2,0.9,3.0,1.0,"CuPy · PyTorch","array/tensor libraries",fc=LBLUE,ec=BLUE,fs=14.4)
 box(ax,3.5,0.9,3.0,1.0,"cuda.compute","composable primitives",fc=LGREEN,ec=GREEN,fs=15.0)
 box(ax,6.8,0.9,3.0,1.0,"CUDA C++","CUB · Thrust",fc=LGREY,ec=GREY,fs=14.4)
 arr(ax,(3.25,1.4),(3.48,1.4)); arr(ax,(6.55,1.4),(6.78,1.4))
-ax.text(0.2,0.45,"◀ higher level (arrays)",fontsize=12.0,color="#5a6b70")
+ax.text(0.2,0.45,"◀ higher level (applications)",fontsize=12.0,color="#5a6b70")
 ax.text(9.8,0.45,"lower level (kernels) ▶",fontsize=12.0,color="#5a6b70",ha="right")
 fig.savefig(f"{OUT}/spectrum.png"); plt.close(fig)
 

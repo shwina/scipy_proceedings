@@ -1,0 +1,26 @@
+NVIDIA RTX PRO 6000 Blackwell Server Edition (GB202, compute capability 12.0 / sm_120), 98 GB.
+Reproduced on a brev instance (female-maroon-roundworm), CUDA 13.2. Machine label: RTX_PRO_6000_Blackwell.
+
+Blackwell (sm_120) required three fixes vs the RTX 6000 Ada stack:
+  - nvidia-nvjitlink-cu13 : torch's cu128 wheel pulls an older cu12 nvjitlink (12.8) that
+    cannot link sm_120 code -> cuda.compute custom ops failed with nvJitLink error 999 /
+    "may need newer version". Installing the CUDA-13 nvjitlink fixed it.
+  - cuda-cccl 1.1.0       : provides the serialize / make_* AoT API (1.0.1 lacked it).
+  - numpy < 2.5           : cuda-cccl 1.1.0 pulls numpy 2.5, but numba needs <= 2.4.
+Both reproduce.sh and reproduce_adl.sh now apply these automatically.
+
+Files here:
+  numbers.json              - all deck numbers (fusion, aot, argmin, dimuon, adl)
+  dimuon_timeline.json      - nsys trace for the dimuon timeline figure
+  bench_ak_argmin.json      - argmin before/after
+  benchmark_cudf_rerun.png  - ADL 3-panel chart;  adl_speedup_panel.png = cropped headline panel
+  adl_logs/                 - raw ADL cmp_{100k,1M,10M}.txt + fused.txt
+  env-freeze-blackwell.txt  - the working package sets (deck venv + ADL awkward3 venv)
+
+Headline results (RTX PRO 6000 Blackwell):
+  fusion abs-sum: cupy 1.6 ms | torch.compile 0.57 ms | cuda.compute 0.57 ms
+  JIT 1155 ms -> cached 0.17 ms ; serialize blob 230 KB ; deserialize 3.3 ms
+  ak.argmin: 0.959 -> 0.384 ms
+  dimuon: 88 kernels -> 1, 2.4x
+  ADL compute-stage: up to 3600x (Q5 @ 10M; baseline 295 s vs 0.082 s); light queries 3-32x;
+                     Q8 never finished on the baseline

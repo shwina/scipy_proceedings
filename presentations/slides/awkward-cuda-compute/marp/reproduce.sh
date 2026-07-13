@@ -55,15 +55,23 @@ PY="$VENV/bin/python"
 
 echo "-- installing packages --"
 uv pip install --python "$PY" \
-    numpy matplotlib requests aiohttp \
+    "numpy<2.5" matplotlib requests aiohttp \
     "awkward==2.10.0" "uproot==5.7.5" "nvtx==0.2.15" \
-    "cuda-cccl==1.0.1" "numba-cuda==0.30.4" "$CUPY_PKG"
+    "cuda-cccl==1.1.0" "numba-cuda==0.30.4" "$CUPY_PKG"
+    # numpy<2.5: numba needs <=2.4. cuda-cccl 1.1.0 has the serialize/AoT API.
 
 # torch is only for the torch.compile comparison bar; don't abort if it fails
 echo "-- installing torch (optional: torch.compile comparison) --"
 # shellcheck disable=SC2086
 uv pip install --python "$PY" $TORCH_SPEC \
   || echo "WARN: torch install failed; the torch.compile number will be TODO."
+
+# Blackwell (sm_120) fix: torch's cu128 wheel pulls nvidia-nvjitlink-cu12 (12.8),
+# which is too old to link sm_120 code -> cuda.compute custom ops fail with
+# nvJitLink 'may need newer version'. Force the CUDA 13 nvjitlink (harmless on
+# older archs). No-op if torch wasn't installed.
+uv pip install --python "$PY" nvidia-nvjitlink-cu13 >/dev/null 2>&1 || true
+uv pip uninstall --python "$PY" nvidia-nvjitlink-cu12 >/dev/null 2>&1 || true
 
 # ---- 4. run the benchmarks -------------------------------------------------
 echo

@@ -1,0 +1,19 @@
+### deck venv (.venv-awkward-bench)
+awkward==2.10.0
+cuda-cccl==1.1.0
+cuda-core==1.1.0
+cupy-cuda13x==14.1.1
+numba==0.66.0
+numba-cuda==0.30.4
+numpy==2.4.6
+torch==2.11.0+cu128
+
+### ADL awkward3 venv
+cuda-cccl==1.1.0
+cuda-core==1.0.1
+cudf-cu13==26.6.0
+cupy-cuda13x==14.1.1
+numba==0.65.1
+numba-cuda==0.30.2
+numpy==2.2.6
+nvidia-nvjitlink==13.3.33

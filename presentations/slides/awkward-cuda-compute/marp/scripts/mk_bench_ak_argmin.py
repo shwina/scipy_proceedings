@@ -17,8 +17,10 @@ for yi,(lbl,val,ec,fc) in zip(y,rows):
 ax.set_yticks(y); ax.set_yticklabels([r[0] for r in rows],fontsize=14.4)
 ax.set_xlim(0, max(d["before_ms"],d["after_ms"])*1.35)
 ax.set_xlabel("time per ak.argmin call  (ms)", fontsize=12.6)
-ax.set_title(f"ak.argmin over ragged data · {d['num_segments']:,} sublists · {d['device']}",
-             fontsize=14.4, fontweight="bold", color=INK, loc="left")
+fig.subplots_adjust(bottom=0.34)
+ax.text(0.0, -0.52, f"ak.argmin over ragged data · {d['num_segments']:,} sublists · {d['device']}",
+        transform=ax.transAxes, ha="left", va="top",
+        fontsize=13.8, fontweight="bold", color=INK)
 for s in ("top","right"): ax.spines[s].set_visible(False)
 ax.tick_params(left=False); ax.grid(axis="x", ls=":", color="#c9d2d6", zorder=0)
 spd=d["before_ms"]/d["after_ms"]

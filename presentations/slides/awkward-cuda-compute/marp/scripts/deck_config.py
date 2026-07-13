@@ -10,7 +10,7 @@ The paper references only the B200 results; RTX_A6000 is kept as an archive.
 import json
 import os
 
-DEFAULT_MACHINE = "RTX_A6000"      # <- change to "B200" once results/B200 is populated
+DEFAULT_MACHINE = "RTX_PRO_6000_Blackwell"      # <- change to "B200" once results/B200 is populated
 MACHINE = os.environ.get("DECK_MACHINE", DEFAULT_MACHINE)
 
 _HERE = os.path.dirname(os.path.abspath(__file__))

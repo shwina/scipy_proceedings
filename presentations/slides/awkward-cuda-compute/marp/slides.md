@@ -5,29 +5,30 @@ paginate: true
 size: 16:9
 header: 'GPU-Accelerated Awkward Arrays with CUDA Python'
 style: |
-  section { font-size: 24px; color: #17303a; padding: 44px 60px 52px 60px; display: flex; flex-direction: column; justify-content: flex-start !important; }
+  section { font-size: 24px; color: #16323c; padding: 44px 60px 52px 60px; display: flex; flex-direction: column; justify-content: flex-start !important; }
   section.sec { justify-content: center !important; }
-  h2 { color: #123f4d; border-bottom: 3px solid #76B900; padding-bottom: 6px; margin: 0 0 6px 0; }
-  strong { color: #123f4d; }
+  h2 { color: #013243; border-bottom: 3px solid #6f93d6; padding-bottom: 6px; margin: 0 0 6px 0; }
+  strong { color: #013243; }
   code { background: #eef3f5; padding: 1px 5px; border-radius: 4px; }
   .cols { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 34px; flex: 1 1 auto; align-items: stretch; }
   .cols > div:last-child { display: flex; flex-direction: column; justify-content: center; }
   .cols ul { margin-top: 16px; }
   .cols li { margin: 12px 0; }
-  .cur  { color: #123f4d; font-weight: 700; }
+  .cur  { color: #013243; font-weight: 700; }
   .past, .past strong { color: #9aa8ad; font-weight: 400; }
   pre { font-size: 15px; margin: 0; }
   .note { font-size: 16px; color: #45555b; margin: 3px 0 12px 4px; }
-  .note b { color: #123f4d; }
+  .note b { color: #013243; }
   .slow { color: #b23b2e; font-weight: 700; }
   .fast { color: #4c8c00; font-weight: 700; }
-  .aot-h { font-size: 17px; font-weight: 700; color: #4c8c00; margin: 0 0 8px 2px; }
+  .aot-h { font-size: 17px; font-weight: 700; color: #013243; margin: 0 0 8px 2px; }
   .aot-gap { margin-top: 22px; border-top: 1px solid #dfe6e8; padding-top: 16px; }
   header { color: #9fb3bb; font-size: 15px; }
   footer { color: #9fb3bb; font-size: 15px; }
-  section.sec { background: #0b2a34; justify-content: center; text-align: center; }
-  section.sec h1 { color: #76B900; font-size: 44px; }
-  section.sec p { color: #7fa6a0; font-size: 22px; }
+  section.sec { background: #013243; justify-content: center; text-align: center; }
+  section.sec h1 { color: #8caae6; font-size: 44px; }
+  section.sec p { color: #9fb8dd; font-size: 22px; }
+  section.sec strong { color: #ffffff; }
   section.sec header, section.sec footer, section.sec:after { display: none; }
 ---
 
@@ -474,7 +475,8 @@ auto squares = thrust::make_transform_iterator(
     thrust::counting_iterator<int>(0),
     [] __device__ (int i) { return i * i; });
 
-int total = thrust::reduce(squares, squares + n);
+int total = thrust::reduce(squares, squares + n,
+                           0, thrust::plus<int>());
 ```
 
 <div class="aot-h aot-gap">cuda.compute (Python)</div>
@@ -543,15 +545,41 @@ reduce_into(d_in=squares, d_out=out, num_items=n,
 </div>
 <div>
 
-![w:620](figs/iterators_seq.png)
+![w:520](figs/iterators_seq.png)
+
+</div>
+</div>
+
+
+---
+
+## `cuda.compute` features
+
+<div class="cols">
+<div>
+
+- <span class="past">**Algorithms**: composable parallel building blocks (CUB and Thrust)</span>
+- <span class="cur">**Iterators**: lazy sequences, computed on the fly, that fuse a step into the next algorithm</span>
+
+</div>
+<div>
 
 ```python
 from cuda.compute import (CountingIterator, TransformIterator,
-                          ZipIterator, PermutationIterator)
+                          reduce_into, OpKind)
+import numpy as np
 
-squares  = TransformIterator(CountingIterator(0), lambda i: i * i)
-pairs    = ZipIterator(values, index)          # (value, index) each
-gathered = PermutationIterator(values, order)  # values[order[i]], lazily
+counting = CountingIterator(np.int32(0))          # 0, 1, 2, 3, ...
+squares  = TransformIterator(counting, lambda i: i * i)
+
+# sum of the first n squares
+reduce_into(d_in=squares, d_out=out, num_items=n,
+            op=OpKind.PLUS, h_init=np.zeros(1, np.int64))
+
+# no array was ever materialized: the integers and their
+# squares are produced on the fly, inside the reduction
+
+assert out[0] == sum(k * k for k in range(n))   # 1**2 + 2**2 + ... + (n-1)**2
 ```
 
 </div>
@@ -573,7 +601,7 @@ gathered = PermutationIterator(values, order)  # values[order[i]], lazily
 <div>
 
 ```python
-from cuda.compute import gpu_struct, reduce_into
+from cuda.compute import gpu_struct, unary_transform
 import numpy as np
 
 @gpu_struct
@@ -582,12 +610,11 @@ class Pixel:
     g: np.int32
     b: np.int32
 
-def max_green(x, y):
-    return x if x.g > y.g else y
+def luminance(p):                       # ITU-R 601 luma
+    return (299 * p.r + 587 * p.g + 114 * p.b) // 1000
 
-# reduce a buffer of RGB pixels to the greenest one
-reduce_into(d_in=d_rgb, d_out=out, num_items=n,
-            op=max_green, h_init=Pixel(0, 0, 0))
+# convert an image of RGB pixels to grayscale, in one pass
+unary_transform(d_in=d_rgb, d_out=gray, op=luminance, num_items=n)
 ```
 
 </div>
@@ -620,7 +647,7 @@ unary_transform(d_in=x, d_out=y, op=square, num_items=n)
 unary_transform(d_in=x, d_out=y, op=square, num_items=n)   # again
 ```
 
-<div class="note">1st call <span class="slow">1077 ms</span>, JIT compiles &nbsp;·&nbsp; 2nd call <span class="fast">0.27 ms</span>, cached</div>
+<div class="note">1st call <span class="slow">1155 ms</span>, JIT compiles &nbsp;·&nbsp; 2nd call <span class="fast">0.17 ms</span>, cached</div>
 
 <div class="aot-h aot-gap">Ahead of time: compile once, reuse</div>
 
@@ -631,7 +658,7 @@ alg = make_unary_transform(d_in=x, d_out=y, op=square)
 open("square.cccl", "wb").write(serialize(alg))
 ```
 
-<div class="note"><b>serialize</b> the compiled kernel → a <b>142 KB</b> blob on disk</div>
+<div class="note"><b>serialize</b> the compiled kernel → a <b>230 KB</b> blob on disk</div>
 
 ```python
 from cuda.compute import deserialize     # a later session
@@ -640,7 +667,7 @@ alg = deserialize(open("square.cccl", "rb").read())
 alg(d_in=x, d_out=y, op=square, num_items=n)
 ```
 
-<div class="note"><b>deserialize</b> → 1st call <span class="fast">3.8 ms</span> (<b>no JIT</b>) &nbsp;·&nbsp; 2nd call <span class="fast">0.21 ms</span>, cached</div>
+<div class="note"><b>deserialize</b> → 1st call <span class="fast">3.3 ms</span> (<b>no JIT</b>) &nbsp;·&nbsp; 2nd call <span class="fast">0.13 ms</span>, cached</div>
 
 </div>
 </div>
@@ -653,7 +680,7 @@ alg(d_in=x, d_out=y, op=square, num_items=n)
 <div class="cols">
 <div>
 
-- <span class="cur">**Awkward array layout**: ragged data stored as flat content and offsets buffers, not a rectangular block</span>
+- <span class="cur">**Awkward array layout**: ragged data stored as flat content and offsets buffers</span>
 
 </div>
 <div>
@@ -671,14 +698,16 @@ alg(d_in=x, d_out=y, op=square, num_items=n)
 <div class="cols">
 <div>
 
-- <span class="past">**Awkward array layout**: ragged data stored as flat content and offsets buffers, not a rectangular block</span>
+- <span class="past">**Awkward array layout**: ragged data stored as flat content and offsets buffers</span>
 - <span class="cur">**Example**: `ak.argmin`</span>
 
 </div>
 <div>
 
 ```python
-data = [[3.1, 1.4], [], [9.0, 0.5, 2.2]]
+import awkward as ak
+
+data = ak.Array([[3.1, 1.4], [], [9.0, 0.5, 2.2]])
 
 # index of the minimum within each sublist
 ak.argmin(data, axis=1)   # [1, None, 1]
@@ -695,7 +724,7 @@ ak.argmin(data, axis=1)   # [1, None, 1]
 <div class="cols">
 <div>
 
-- <span class="past">**Awkward array layout**: ragged data stored as flat content and offsets buffers, not a rectangular block</span>
+- <span class="past">**Awkward array layout**: ragged data stored as flat content and offsets buffers</span>
 - <span class="past">**Example**: `ak.argmin`</span>
 - <span class="cur">**Previous Awkward implementation**: a handwritten CUDA C++ kernel, three passes and about 150 lines</span>
 
@@ -720,7 +749,7 @@ while (true) {
 }
 ```
 
-<div class="note">the <b>atomicCAS</b> retry loop is subtle: correctness hinges on memory ordering, it is easy to introduce data races, and it is hard to reason about. `cuda.compute` hides this behind a tested primitive, so library authors never write it</div>
+<div class="note">the <b>atomicCAS</b> retry loop is subtle: correctness hinges on memory ordering, it is easy to introduce data races, and it is hard to reason about. <code>cuda.compute</code> hides this behind a tested primitive, so library authors never write it</div>
 
 </div>
 </div>
@@ -733,10 +762,10 @@ while (true) {
 <div class="cols">
 <div>
 
-- <span class="past">**Awkward array layout**: ragged data stored as flat content and offsets buffers, not a rectangular block</span>
+- <span class="past">**Awkward array layout**: ragged data stored as flat content and offsets buffers</span>
 - <span class="past">**Example**: `ak.argmin`</span>
 - <span class="past">**Previous Awkward implementation**: a handwritten CUDA C++ kernel, three passes and about 150 lines</span>
-- <span class="cur">**Using cuda.compute**: the same reduction in a few lines of Python</span>
+- <span class="cur">**Using `cuda.compute`**: the same reduction in a few lines of Python</span>
 
 </div>
 <div>
@@ -754,7 +783,7 @@ unary_transform(d_in=CountingIterator(0),
                 num_items=num_sublists)
 ```
 
-<div class="note">one thread per sublist: a neat trick when sublists are <b>small</b>. For <b>large</b> sublists, use `segmented_reduce` (returns the global argmin index) then `lower_bound` to convert it to a local offset</div>
+<div class="note">one thread per sublist: a neat trick when sublists are <b>small</b>. For <b>large</b> sublists, use <code>segmented_reduce</code> (returns the global argmin index) then <code>lower_bound</code> to convert it to a local offset</div>
 
 </div>
 </div>
@@ -767,10 +796,10 @@ unary_transform(d_in=CountingIterator(0),
 <div class="cols">
 <div>
 
-- <span class="past">**Awkward array layout**: ragged data stored as flat content and offsets buffers, not a rectangular block</span>
+- <span class="past">**Awkward array layout**: ragged data stored as flat content and offsets buffers</span>
 - <span class="past">**Example**: `ak.argmin`</span>
 - <span class="past">**Previous Awkward implementation**: a handwritten CUDA C++ kernel, three passes and about 150 lines</span>
-- <span class="past">**Using cuda.compute**: the same reduction in a few lines of Python</span>
+- <span class="past">**Using `cuda.compute`**: the same reduction in a few lines of Python</span>
 - <span class="cur">**Performance results**: identical output, and faster than the handwritten kernel</span>
 
 </div>
@@ -808,7 +837,7 @@ unary_transform(d_in=CountingIterator(0),
 <div>
 
 - <span class="past">**Kernel fusion** is key to optimizing memory traffic and reducing launch overhead</span>
-- <span class="cur">**Implicit vs explicit fusion**: `|x|` then `sum`, without materializing the intermediate (100M values)</span>
+- <span class="cur">**Implicit vs explicit fusion**: `|x|` then `sum`, without materializing the intermediate</span>
 
 </div>
 <div>
@@ -819,16 +848,17 @@ unary_transform(d_in=CountingIterator(0),
 y = cp.abs(x).sum()
 ```
 
-<div class="note"><span class="slow">3 kernels · 2.9 ms</span> &nbsp; `abs` writes `|x|` to memory, `sum` reads it back: 3x the traffic. <b>cupy is unfused today; it will fuse as it moves onto cuda.compute</b></div>
+<div class="note"><span class="slow">3 kernels · 1.6 ms</span> &nbsp; <code>abs</code> writes <code>|x|</code> to memory, <code>sum</code> reads it back: 3x the traffic</div>
 
 <div class="aot-h aot-gap">implicit fusion (torch.compile)</div>
 
 ```python
 @torch.compile
-def abs_sum(x): return torch.abs(x).sum()
+def abs_sum(x):
+    return torch.abs(x).sum()
 ```
 
-<div class="note"><span class="fast">2 kernels · 0.93 ms</span> &nbsp; a compiler decides what fuses</div>
+<div class="note"><span class="fast">2 kernels · 0.57 ms</span> &nbsp; a compiler decides what fuses</div>
 
 <div class="aot-h aot-gap">explicit fusion (cuda.compute)</div>
 
@@ -837,7 +867,9 @@ absx = TransformIterator(x, lambda v: abs(v))
 reduce_into(d_in=absx, d_out=out, op=OpKind.PLUS, ...)
 ```
 
-<div class="note"><span class="fast">2 kernels · 0.93 ms</span> &nbsp; you compose the fusion, on any data</div>
+<div class="note"><span class="fast">2 kernels · 0.57 ms</span> &nbsp; you compose the fusion, on any data</div>
+
+<div class="note" style="margin-top:16px"><b>100 M values · RTX PRO 6000 Blackwell</b></div>
 
 </div>
 </div>
@@ -851,7 +883,7 @@ reduce_into(d_in=absx, d_out=out, op=OpKind.PLUS, ...)
 <div>
 
 - <span class="past">**Kernel fusion** is key to optimizing memory traffic and reducing launch overhead</span>
-- <span class="past">**Implicit vs explicit fusion**: `|x|` then `sum`, without materializing the intermediate (100M values)</span>
+- <span class="past">**Implicit vs explicit fusion**: `|x|` then `sum`, without materializing the intermediate</span>
 - <span class="cur">**A real workflow**: dimuon invariant mass, one line of Awkward</span>
 
 </div>
@@ -866,7 +898,7 @@ mass = np.sqrt(
      - np.cos (mu1.phi - mu2.phi)))
 ```
 
-<div class="note">array at a time: on the GPU every `ufunc` becomes its own kernel, spilling each intermediate to memory</div>
+<div class="note">array at a time: each operation is one or more separate kernels</div>
 
 </div>
 </div>
@@ -880,7 +912,7 @@ mass = np.sqrt(
 <div>
 
 - <span class="past">**Kernel fusion** is key to optimizing memory traffic and reducing launch overhead</span>
-- <span class="past">**Implicit vs explicit fusion**: `|x|` then `sum`, without materializing the intermediate (100M values)</span>
+- <span class="past">**Implicit vs explicit fusion**: `|x|` then `sum`, without materializing the intermediate</span>
 - <span class="past">**A real workflow**: dimuon invariant mass, one line of Awkward</span>
 - <span class="cur">**Fused with cuda.compute**: the whole formula in one `binary_transform`</span>
 
@@ -890,7 +922,10 @@ mass = np.sqrt(
 ```python
 @gpu_struct
 class Muon:
-    pt: float32; eta: float32; phi: float32; charge: int32
+    pt: float32
+    eta: float32
+    phi: float32
+    charge: int32
 
 def mass(m1, m2):
     return (2 * m1.pt * m2.pt * (cosh(m1.eta - m2.eta)
@@ -918,10 +953,9 @@ binary_transform(d_in1=muons1, d_in2=muons2,
 <div>
 
 - <span class="past">**Kernel fusion** is key to optimizing memory traffic and reducing launch overhead</span>
-- <span class="past">**Implicit vs explicit fusion**: `|x|` then `sum`, without materializing the intermediate (100M values)</span>
+- <span class="past">**Implicit vs explicit fusion**: `|x|` then `sum`, without materializing the intermediate</span>
 - <span class="past">**A real workflow**: dimuon invariant mass, one line of Awkward</span>
-- <span class="past">**Fused with cuda.compute**: the whole formula in one `binary_transform`</span>
-- <span class="cur">**The measured GPU timeline**: 88 kernels become 1, **2.9x faster**</span>
+- <span class="cur">**Fused with cuda.compute**: the whole formula in one `binary_transform`</span>
 
 </div>
 <div>
@@ -958,7 +992,7 @@ binary_transform(d_in1=muons1, d_in2=muons2,
 <div>
 
 - <span class="past">**85% of CUDA kernels** ported from CUDA C++ to pure Python</span>
-- <span class="cur">**From `parents` to `offsets`**: the ragged layout maps straight onto segmented algorithms</span>
+- <span class="cur">**Rearchitecting for the GPU**: moving from `parents` to `offsets` also **speeds up the CPU**</span>
 
 </div>
 <div>
@@ -976,6 +1010,8 @@ segmented_reduce(
     op=OpKind.MINIMUM, h_init=identity)
 ```
 
+<div class="note">the same <code>offsets</code> contract that fits GPU segmented algorithms also sped up the CPU reducers: about <b>4x geomean</b> across sum, min and argmin, by dropping the parents to offsets conversion <b>(awkward #4056)</b></div>
+
 </div>
 </div>
 
@@ -988,7 +1024,7 @@ segmented_reduce(
 <div>
 
 - <span class="past">**85% of CUDA kernels** ported from CUDA C++ to pure Python</span>
-- <span class="past">**From `parents` to `offsets`**: the ragged layout maps straight onto segmented algorithms</span>
+- <span class="past">**Rearchitecting for the GPU**: moving from `parents` to `offsets` also **speeds up the CPU**</span>
 - <span class="cur">**Awkward on CUDA is now even faster**</span>
 
 </div>
@@ -996,7 +1032,7 @@ segmented_reduce(
 
 ![w:940](figs/adl_speedup_panel.png)
 
-<div class="note">GPU compute stage vs the handwritten kernels, across the ADL physics queries. The <b>combinatoric</b> queries (Q5, Q6) win biggest, <b>up to 1509x</b>, because they are compute dominated and fuse into single passes. The <b>light</b> queries (Q3, Q4, Q7) still win 4 to 44x but are read bound end to end. Q8 <b>never finished</b> on the old backend; it now runs in about a second. The wins hold from 100k to 10M events</div>
+<div class="note">GPU compute stage vs the handwritten kernels, across the ADL physics queries. <b>Combinatoric</b> queries (Q5, Q6) are compute dominated and fuse into single passes: up to <b>3600x</b>. <b>Light</b> queries (Q3, Q4, Q7) still win <b>3 to 32x</b>. Q8 <b>never finished</b> on the old backend; it now runs in about a second. The wins hold from 100k to 10M events</div>
 
 </div>
 </div>
@@ -1010,7 +1046,29 @@ segmented_reduce(
 <div>
 
 - <span class="past">**85% of CUDA kernels** ported from CUDA C++ to pure Python</span>
-- <span class="past">**From `parents` to `offsets`**: the ragged layout maps straight onto segmented algorithms</span>
+- <span class="past">**Rearchitecting for the GPU**: moving from `parents` to `offsets` also **speeds up the CPU**</span>
+- <span class="cur">**Awkward on CUDA is now even faster**</span>
+
+</div>
+<div>
+
+![w:940](figs/adl_e2e_panel.png)
+
+<div class="note">end to end (read + load + compute + fill): the compute dominated queries stay far ahead, Q5 <b>1685x</b> and Q6 <b>229x</b>, while the read bound light queries hold <b>1.1 to 2.6x</b>. cudf GPU-direct reads in both backends, so read and load are shared and this isolates the fusion win</div>
+
+</div>
+</div>
+
+
+---
+
+## Awkward Array: present and future
+
+<div class="cols">
+<div>
+
+- <span class="past">**85% of CUDA kernels** ported from CUDA C++ to pure Python</span>
+- <span class="past">**Rearchitecting for the GPU**: moving from `parents` to `offsets` also **speeds up the CPU**</span>
 - <span class="past">**Awkward on CUDA is now even faster**</span>
 - <span class="cur">**What is next: lazy execution**</span>
 

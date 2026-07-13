@@ -54,7 +54,7 @@ ax.axvline(a_span, color=GREEN, ls=":", lw=1, zorder=1)
 ax.set_xlim(-xmax*0.16, xmax)
 ax.set_ylim(-0.7, 3.9)
 ax.set_yticks([])
-ax.set_xlabel("GPU time (ms)  ·  actual nsys trace", fontsize=12.6, color=INK)
+ax.set_xlabel("GPU execution timeline (ms)", fontsize=12.6, color=INK)
 for s in ("top", "right", "left"): ax.spines[s].set_visible(False)
 ax.tick_params(axis="x", labelsize=9)
 ax.set_title(f"Dimuon invariant mass on the GPU  ·  {sp:.1f}x faster, one kernel instead of {data['before']['nkern']}",

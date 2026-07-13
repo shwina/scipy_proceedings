@@ -64,10 +64,10 @@ def _adl_numbers():
             "light_low_x": f"{min(light):.0f}", "light_high_x": f"{max(light):.0f}"}
 
 
-def _crop_panel(src, dst):
+def _crop_panel(src, dst, y0, y1):
     from PIL import Image
     im = Image.open(src); W, _ = im.size
-    im.crop((0, 82, W, 972)).save(dst)   # top ("compute-stage speedup") panel
+    im.crop((0, y0, W, y1)).save(dst)
 
 
 def main():
@@ -76,8 +76,9 @@ def main():
                  f"(set COLUMNAR_GPU to the columnar_gpu dir). See this script's docstring.")
     figs = os.path.join(MARP, "figs")
     shutil.copy(CHART, os.path.join(figs, "benchmark_cudf_rerun.png"))
-    _crop_panel(CHART, os.path.join(figs, "adl_speedup_panel.png"))
-    print("copied figs/benchmark_cudf_rerun.png and figs/adl_speedup_panel.png")
+    _crop_panel(CHART, os.path.join(figs, "adl_speedup_panel.png"), 82, 972)     # panel A: compute-stage
+    _crop_panel(CHART, os.path.join(figs, "adl_e2e_panel.png"), 1028, 1878)       # panel B: end-to-end
+    print("copied figs/benchmark_cudf_rerun.png, adl_speedup_panel.png, adl_e2e_panel.png")
 
     adl = _adl_numbers()
     npath = os.path.join(RESULTS, "numbers.json")

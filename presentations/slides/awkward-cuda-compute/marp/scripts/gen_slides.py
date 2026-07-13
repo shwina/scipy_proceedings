@@ -297,29 +297,30 @@ paginate: true
 size: 16:9
 header: 'GPU-Accelerated Awkward Arrays with CUDA Python'
 style: |
-  section { font-size: 24px; color: #17303a; padding: 44px 60px 52px 60px; display: flex; flex-direction: column; justify-content: flex-start !important; }
+  section { font-size: 24px; color: #16323c; padding: 44px 60px 52px 60px; display: flex; flex-direction: column; justify-content: flex-start !important; }
   section.sec { justify-content: center !important; }
-  h2 { color: #123f4d; border-bottom: 3px solid #76B900; padding-bottom: 6px; margin: 0 0 6px 0; }
-  strong { color: #123f4d; }
+  h2 { color: #013243; border-bottom: 3px solid #6f93d6; padding-bottom: 6px; margin: 0 0 6px 0; }
+  strong { color: #013243; }
   code { background: #eef3f5; padding: 1px 5px; border-radius: 4px; }
   .cols { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 34px; flex: 1 1 auto; align-items: stretch; }
   .cols > div:last-child { display: flex; flex-direction: column; justify-content: center; }
   .cols ul { margin-top: 16px; }
   .cols li { margin: 12px 0; }
-  .cur  { color: #123f4d; font-weight: 700; }
+  .cur  { color: #013243; font-weight: 700; }
   .past, .past strong { color: #9aa8ad; font-weight: 400; }
   pre { font-size: 15px; margin: 0; }
   .note { font-size: 16px; color: #45555b; margin: 3px 0 12px 4px; }
-  .note b { color: #123f4d; }
+  .note b { color: #013243; }
   .slow { color: #b23b2e; font-weight: 700; }
   .fast { color: #4c8c00; font-weight: 700; }
-  .aot-h { font-size: 17px; font-weight: 700; color: #4c8c00; margin: 0 0 8px 2px; }
+  .aot-h { font-size: 17px; font-weight: 700; color: #013243; margin: 0 0 8px 2px; }
   .aot-gap { margin-top: 22px; border-top: 1px solid #dfe6e8; padding-top: 16px; }
   header { color: #9fb3bb; font-size: 15px; }
   footer { color: #9fb3bb; font-size: 15px; }
-  section.sec { background: #0b2a34; justify-content: center; text-align: center; }
-  section.sec h1 { color: #76B900; font-size: 44px; }
-  section.sec p { color: #7fa6a0; font-size: 22px; }
+  section.sec { background: #013243; justify-content: center; text-align: center; }
+  section.sec h1 { color: #8caae6; font-size: 44px; }
+  section.sec p { color: #9fb8dd; font-size: 22px; }
+  section.sec strong { color: #ffffff; }
   section.sec header, section.sec footer, section.sec:after { display: none; }
 ---
 
