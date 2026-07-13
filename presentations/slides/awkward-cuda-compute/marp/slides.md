@@ -27,6 +27,7 @@ style: |
   footer { color: #9fb3bb; font-size: 15px; }
   section.sec { background: #013243; justify-content: center; text-align: center; }
   section.sec h1 { color: #8caae6; font-size: 44px; }
+  section.sec h2 { color: #cdddf2; border-bottom: none; font-size: 25px; font-weight: 400; margin: 12px auto 22px; max-width: 900px; }
   section.sec p { color: #9fb8dd; font-size: 22px; }
   section.sec strong { color: #ffffff; }
   section.sec header, section.sec footer, section.sec:after { display: none; }
