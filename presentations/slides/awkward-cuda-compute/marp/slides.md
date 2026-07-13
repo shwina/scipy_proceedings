@@ -447,7 +447,7 @@ merge_sort(d_in_keys=data_in, d_out_keys=data_out,
 </div>
 <div>
 
-![w:780](figs/spectrum.png)
+![w:430](figs/spectrum.png)
 
 </div>
 </div>
@@ -492,26 +492,6 @@ reduce_into(d_in=squares, d_out=out, num_items=n,
 </div>
 
 
----
-
-## What is `cuda.compute`?
-
-<div class="cols">
-<div>
-
-- <span class="past">One of several libraries in **CUDA Python**</span>
-- <span class="past">Lets you build **custom algorithms**</span>
-- <span class="past">Sits **below** the array / tensor frameworks</span>
-- <span class="past">Inspired by **C++**: generic algorithms and iterators</span>
-- <span class="cur">Everything is compiled **just in time**</span>
-
-</div>
-<div>
-
-![w:700](figs/jit_compile.png)
-
-</div>
-</div>
 
 
 ---
@@ -731,25 +711,7 @@ ak.argmin(data, axis=1)   # [1, None, 1]
 </div>
 <div>
 
-```cpp
-// awkward_reduce_argmin_b  (1 of 3 kernels)
-// per block reduce by parent, then combine block
-// winners across blocks with an atomic CAS retry loop:
-uint64_t cur = atomic_toptr[parent];
-while (true) {
-  if (cur == EMPTY) {
-    if (atomicCAS(&atomic_toptr[parent], EMPTY, cand)
-          == EMPTY) break;          // installed
-  } else if (fromptr[cand] < fromptr[(int64_t)cur]) {
-    uint64_t prev =
-        atomicCAS(&atomic_toptr[parent], cur, cand);
-    if (prev == cur) break;         // replaced
-    cur = prev;                     // lost race, retry
-  } else break;
-}
-```
-
-<div class="note">the <b>atomicCAS</b> retry loop is subtle: correctness hinges on memory ordering, it is easy to introduce data races, and it is hard to reason about. <code>cuda.compute</code> hides this behind a tested primitive, so library authors never write it</div>
+![w:1000](figs/argmin_kernels_volume.png)
 
 </div>
 </div>
@@ -771,7 +733,6 @@ while (true) {
 <div>
 
 ```python
-# Awkward's cuda.compute ak.argmin, in full:
 def segment_argmin(seg_id):
     lo, hi = starts[seg_id], stops[seg_id]
     if lo == hi:
@@ -783,7 +744,7 @@ unary_transform(d_in=CountingIterator(0),
                 num_items=num_sublists)
 ```
 
-<div class="note">one thread per sublist: a neat trick when sublists are <b>small</b>. For <b>large</b> sublists, use <code>segmented_reduce</code> (returns the global argmin index) then <code>lower_bound</code> to convert it to a local offset</div>
+<div class="aot-h">ak.argmin (cuda.compute): a few lines of pure Python</div>
 
 </div>
 </div>
@@ -864,10 +825,11 @@ def abs_sum(x):
 
 ```python
 absx = TransformIterator(x, lambda v: abs(v))
-reduce_into(d_in=absx, d_out=out, op=OpKind.PLUS, ...)
+reduce_into(d_in=absx, d_out=out, op=OpKind.PLUS,
+            determinism=Determinism.NOT_GUARANTEED, ...)
 ```
 
-<div class="note"><span class="fast">2 kernels · 0.57 ms</span> &nbsp; you compose the fusion, on any data</div>
+<div class="note"><span class="fast">1 kernel · 0.57 ms</span> &nbsp; you compose the fusion, on any data</div>
 
 <div class="note" style="margin-top:16px"><b>100 M values · RTX PRO 6000 Blackwell</b></div>
 
@@ -898,7 +860,7 @@ mass = np.sqrt(
      - np.cos (mu1.phi - mu2.phi)))
 ```
 
-<div class="note">array at a time: each operation is one or more separate kernels</div>
+<div class="note">each operation is one or more separate kernels</div>
 
 </div>
 </div>
@@ -939,7 +901,7 @@ binary_transform(d_in1=muons1, d_in2=muons2,
                  d_out=out, op=mass, num_items=n)
 ```
 
-<div class="note">one fused kernel over zipped, permuted iterators: no intermediates in memory</div>
+<div class="note">one fused kernel - no intermediate memory allocations</div>
 
 </div>
 </div>
@@ -997,20 +959,9 @@ binary_transform(d_in1=muons1, d_in2=muons2,
 </div>
 <div>
 
-![w:520](figs/layout.png)
+![w:640](figs/layout.png)
 
-```python
-# a ragged array is a flat `content` + `offsets`;
-# sublist k spans offsets[k] : offsets[k+1]
-segmented_reduce(
-    d_in=content, d_out=out,
-    num_segments=len(offsets) - 1,
-    start_offsets_in=offsets[:-1],
-    end_offsets_in=offsets[1:],
-    op=OpKind.MINIMUM, h_init=identity)
-```
-
-<div class="note">the same <code>offsets</code> contract that fits GPU segmented algorithms also sped up the CPU reducers: about <b>4x geomean</b> across sum, min and argmin, by dropping the parents to offsets conversion <b>(awkward #4056)</b></div>
+<div class="note">the same <code>offsets</code> layout that maps ragged data onto GPU segmented algorithms also sped up Awkward's CPU reducers by about <b>4x</b> (awkward #4056)</div>
 
 </div>
 </div>
@@ -1032,32 +983,12 @@ segmented_reduce(
 
 ![w:940](figs/adl_speedup_panel.png)
 
-<div class="note">GPU compute stage vs the handwritten kernels, across the ADL physics queries. <b>Combinatoric</b> queries (Q5, Q6) are compute dominated and fuse into single passes: up to <b>3600x</b>. <b>Light</b> queries (Q3, Q4, Q7) still win <b>3 to 32x</b>. Q8 <b>never finished</b> on the old backend; it now runs in about a second. The wins hold from 100k to 10M events</div>
+<div class="note">Speedups for high-energy physics (HEP) queries in the ADL benchmark, <b>GPU to GPU</b> (previous CUDA C++ kernels vs cuda.compute), compute stage only</div>
 
 </div>
 </div>
 
 
----
-
-## Awkward Array: present and future
-
-<div class="cols">
-<div>
-
-- <span class="past">**85% of CUDA kernels** ported from CUDA C++ to pure Python</span>
-- <span class="past">**Rearchitecting for the GPU**: moving from `parents` to `offsets` also **speeds up the CPU**</span>
-- <span class="cur">**Awkward on CUDA is now even faster**</span>
-
-</div>
-<div>
-
-![w:940](figs/adl_e2e_panel.png)
-
-<div class="note">end to end (read + load + compute + fill): the compute dominated queries stay far ahead, Q5 <b>1685x</b> and Q6 <b>229x</b>, while the read bound light queries hold <b>1.1 to 2.6x</b>. cudf GPU-direct reads in both backends, so read and load are shared and this isolates the fusion win</div>
-
-</div>
-</div>
 
 
 ---
@@ -1086,7 +1017,7 @@ for _ in range(16):
 expr.compute(fuse=True)      # whole chain -> ONE kernel
 ```
 
-<div class="note">the lazy layer fuses a whole chain of operations into a single kernel automatically: a 32 op chain becomes one launch, <b>up to ~90x faster</b> than running each op eagerly, and the deeper the chain the bigger the win</div>
+<div class="note">the lazy layer fuses a whole chain of element-wise ops into one kernel automatically, <b>up to ~90x faster</b> than running each eagerly</div>
 
 </div>
 </div>

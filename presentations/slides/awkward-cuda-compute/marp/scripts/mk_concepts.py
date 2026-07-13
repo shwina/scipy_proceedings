@@ -23,14 +23,15 @@ for i,(nm,fc,ec) in enumerate(kids):
 ax.text(x0+2*(w+gap)+w/2,0.45,"↑ this talk",ha="center",fontsize=10.8,color=GREEN,fontweight="bold")
 fig.savefig(f"{OUT}/ecosystem.png"); plt.close(fig)
 
-# 1.3 abstraction spectrum
-fig,ax=plt.subplots(figsize=(10,2.4)); ax.set_xlim(0,10); ax.set_ylim(0,2.4); ax.axis("off")
-box(ax,0.2,0.9,3.0,1.0,"CuPy · PyTorch","array/tensor libraries",fc=LBLUE,ec=BLUE,fs=14.4)
-box(ax,3.5,0.9,3.0,1.0,"cuda.compute","composable primitives",fc=LGREEN,ec=GREEN,fs=15.0)
-box(ax,6.8,0.9,3.0,1.0,"CUDA C++","CUB · Thrust",fc=LGREY,ec=GREY,fs=14.4)
-arr(ax,(3.25,1.4),(3.48,1.4)); arr(ax,(6.55,1.4),(6.78,1.4))
-ax.text(0.2,0.45,"◀ higher level (applications)",fontsize=12.0,color="#5a6b70")
-ax.text(9.8,0.45,"lower level (kernels) ▶",fontsize=12.0,color="#5a6b70",ha="right")
+# 1.3 abstraction spectrum (vertical stack: higher level on top, lower level below)
+fig,ax=plt.subplots(figsize=(5.6,6.0)); ax.set_xlim(0,5.6); ax.set_ylim(0,6.0); ax.axis("off")
+cx=2.8; bw=3.6; bx=cx-bw/2; bh=1.0
+box(ax,bx,4.4,bw,bh,"CuPy · PyTorch","array/tensor libraries",fc=LBLUE,ec=BLUE,fs=15.0)
+box(ax,bx,2.8,bw,bh,"cuda.compute","composable primitives",fc=LGREEN,ec=GREEN,fs=15.6)
+box(ax,bx,1.2,bw,bh,"CUDA C++","CUB · Thrust",fc=LGREY,ec=GREY,fs=15.0)
+arr(ax,(cx,4.4),(cx,3.85)); arr(ax,(cx,2.8),(cx,2.25))
+ax.text(cx,5.7,"↑ higher level (applications)",ha="center",fontsize=12.6,color="#5a6b70")
+ax.text(cx,0.6,"↓ lower level (kernels)",ha="center",fontsize=12.6,color="#5a6b70")
 fig.savefig(f"{OUT}/spectrum.png"); plt.close(fig)
 
 # 1.5 JIT pipeline

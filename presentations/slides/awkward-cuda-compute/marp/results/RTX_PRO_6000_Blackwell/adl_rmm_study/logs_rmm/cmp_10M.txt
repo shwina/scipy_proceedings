@@ -1,0 +1,20 @@
+### dataset: /home/ubuntu/columnar-gpu-cuda-compute/data/pq_subset_10M.parquet (reader=cudf)
+### awkward3 (cuda.compute)
+{"q": 1, "label": "awkward3", "ok": true, "read": 0.03218650817871094, "load": 0.00018548965454101562, "comp": 1.430511474609375e-06, "fill": 0.0014955997467041016, "total": 0.033869028091430664}
+{"q": 2, "label": "awkward3", "ok": true, "read": 0.046694040298461914, "load": 0.0005488395690917969, "comp": 1.6689300537109375e-06, "fill": 0.004119396209716797, "total": 0.05136394500732422}
+{"q": 3, "label": "awkward3", "ok": true, "read": 0.05103707313537598, "load": 0.000978231430053711, "comp": 0.012583494186401367, "fill": 0.0011959075927734375, "total": 0.06579470634460449}
+{"q": 4, "label": "awkward3", "ok": true, "read": 0.04974055290222168, "load": 0.0010280609130859375, "comp": 0.005440473556518555, "fill": 0.0010251998901367188, "total": 0.05723428726196289}
+{"q": 5, "label": "awkward3", "ok": true, "read": 0.0847783088684082, "load": 0.0030782222747802734, "comp": 0.05266880989074707, "fill": 0.0011026859283447266, "total": 0.14162802696228027}
+{"q": 6, "label": "awkward3", "ok": true, "read": 0.08518505096435547, "load": 0.0023453235626220703, "comp": 0.6639113426208496, "fill": 0.002568960189819336, "total": 0.7540106773376465}
+{"q": 7, "label": "awkward3", "ok": true, "read": 0.11571669578552246, "load": 0.006142139434814453, "comp": 0.22066617012023926, "fill": 0.00157928466796875, "total": 0.3441042900085449}
+{"q": 8, "label": "awkward3", "ok": true, "read": 0.09263730049133301, "load": 0.005282402038574219, "comp": 0.1761636734008789, "fill": 0.0018460750579833984, "total": 0.27592945098876953}
+### baseline (2.8.11 RawKernel)
+{"q": 1, "label": "baseline", "ok": true, "read": 0.031555891036987305, "load": 0.00019669532775878906, "comp": 1.430511474609375e-06, "fill": 0.001436471939086914, "total": 0.03319048881530762}
+{"q": 2, "label": "baseline", "ok": true, "read": 0.045508623123168945, "load": 0.0005464553833007812, "comp": 1.430511474609375e-06, "fill": 0.00406336784362793, "total": 0.050119876861572266}
+{"q": 3, "label": "baseline", "ok": true, "read": 0.0535435676574707, "load": 0.0010151863098144531, "comp": 0.008053302764892578, "fill": 0.0012578964233398438, "total": 0.06386995315551758}
+{"q": 4, "label": "baseline", "ok": true, "read": 0.05016064643859863, "load": 0.0007410049438476562, "comp": 0.005130290985107422, "fill": 0.0010259151458740234, "total": 0.057057857513427734}
+{"q": 5, "label": "baseline", "ok": true, "read": 0.08362007141113281, "load": 0.0025298595428466797, "comp": 292.1822512149811, "fill": 0.0011680126190185547, "total": 292.2695691585541}
+{"q": 6, "label": "baseline", "ok": true, "read": 0.0808572769165039, "load": 0.0022993087768554688, "comp": 302.917845249176, "fill": 0.0025789737701416016, "total": 303.0035808086395}
+{"q": 7, "label": "baseline", "ok": false, "error": "ValueError: zero-size array to reduction operation CUPY_CUB_MAX which has no identity"}
+{"q": 8, "label": "baseline", "ok": false, "error": "CUDADriverError: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered"}
+### DONE
