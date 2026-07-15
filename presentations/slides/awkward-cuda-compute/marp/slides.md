@@ -664,7 +664,16 @@ assert out[0] == sum(k * k for k in range(n))   # 1**2 + 2**2 + ... + (n-1)**2
 ## `cuda.compute` features
 
 <!--
-We've talked about cuda.compute allowing you to customize 
+Another important feature of cuda.compute is the ability to work with user-defined types.
+These can be arbitrarily nested struct types.
+So if you have data laid out as an array of structures, cuda.compute can work with that quite naturally.
+In the code example, I have an array of pixels where each pixel is a compound data type composed
+of RGB components. 
+I can define a custom data type in cuda.compute using the gpu_struct deocrator.
+Then, I can 
+
+
+
 -->
 
 
@@ -688,11 +697,12 @@ class Pixel:
     g: np.int32
     b: np.int32
 
-def luminance(p):                       # ITU-R 601 luma
+def luminance(p: Pixel) -> np.int32:
+    # ITU-R 601 luma
     return (299 * p.r + 587 * p.g + 114 * p.b) // 1000
 
-# convert an image of RGB pixels to grayscale, in one pass
-unary_transform(d_in=d_rgb, d_out=gray, op=luminance, num_items=n)
+# compute the luminance of each pixel:
+unary_transform(d_in=d_rgb, d_out=gray, opp=luminance, num_items=n)
 ```
 
 </div>
