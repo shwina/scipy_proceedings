@@ -7,10 +7,10 @@
 #
 # Code line numbers are added by marp.config.js -> scripts/marp-lineno.js (auto-loaded).
 
-MARP ?= marp
-PY   ?= python3
+MARP ?= ./node_modules/.bin/marp
+PY   ?= .venv/bin/python3
 SRC  := slides.md
-#DEPS := $(SRC) marp.config.js scripts/marp-lineno.js $(wildcard figs/*.png)
+DEPS := $(SRC) marp.config.js scripts/marp-lineno.js
 
 # Headless Chrome for PDF rendering. This dev box needs a --no-sandbox wrapper;
 # it is exported only if present, so a normal Chrome install elsewhere still works.

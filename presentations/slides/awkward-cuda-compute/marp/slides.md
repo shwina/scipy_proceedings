@@ -44,7 +44,7 @@ style: |
 
 ## How do you compile high-level Python operations on irregular data into efficient GPU kernels?
 
-Ianna Osborne (Princeton) · **Ashwin Srinath** (NVIDIA) · SciPy 2026
+Ianna Osborne (Princeton) · Ashwin Srinath (NVIDIA) · SciPy 2026
 
 
 ---
@@ -444,6 +444,12 @@ Writing kernels requires some CUDA expertise. That's why we have cuda.compute - 
 <div class="note" style="text-align:center"><a href="https://nvidia.github.io/cuda-python/" style="color:#6f93d6">https://nvidia.github.io/cuda-python/</a></div>
 
 </div>
+</div>
+
+<div style="margin-top: 14px; background: #eef3f5; border-left: 4px solid #6f93d6; padding: 8px 16px; font-size: 15px; border-radius: 4px;">
+<b>Install:</b><br>
+<code>pip install cuda-cccl[cu12]</code> &nbsp;·&nbsp; <code>pip install cuda-cccl[cu13]</code><br>
+<code>conda install -c conda-forge cccl-python</code>
 </div>
 
 
@@ -1092,6 +1098,26 @@ binary_transform(d_in1=muons1, d_in2=muons2,
 <div>
 
 ![w:980](figs/dimuon_timeline.png)
+
+</div>
+</div>
+
+
+---
+
+## Kernel fusion
+
+<div style="display:flex; align-items:center; gap:48px; margin-top:24px;">
+<div>
+
+![w:260](figs/qr_kernel_fusion_blog.png)
+
+</div>
+<div>
+
+### Kernel Fusion in NVIDIA CUDA: Optimizing Memory Traffic and Launch Overhead
+
+<div class="note" style="margin-top:10px"><a href="https://developer.nvidia.com/blog/kernel-fusion-in-nvidia-cuda-optimizing-memory-traffic-and-launch-overhead/" style="color:#6f93d6">developer.nvidia.com/blog/kernel-fusion-in-nvidia-cuda-…</a></div>
 
 </div>
 </div>
