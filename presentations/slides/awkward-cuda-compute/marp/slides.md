@@ -46,11 +46,17 @@ style: |
 
 Ianna Osborne (Princeton) · **Ashwin Srinath** (NVIDIA) · SciPy 2026
 
+
 ---
 
 ## Scientific data isn't rectangular
 
 <div class="cols even">
+<style scoped>
+.cols > div { display: flex; flex-direction: column; justify-content: center; }
+</style>
+
+<div class="cols">
 <div>
 
 <span class="cur">NumPy</span>
@@ -90,11 +96,18 @@ Ianna Osborne (Princeton) · **Ashwin Srinath** (NVIDIA) · SciPy 2026
 ## GPUs prefer regular work
 
 <div class="cols even">
+<style scoped>
+.cols > div { display: flex; flex-direction: column; justify-content: center; }
+.cols pre code { line-height: 1.6; letter-spacing: 3px; }
+</style>
+
+<div class="cols">
 <div>
 
 <span class="cur">Traditional GPU algorithms assume</span>
 
 ```
+□□□□□
 □□□□□
 □□□□□
 □□□□□
@@ -124,6 +137,12 @@ Ianna Osborne (Princeton) · **Ashwin Srinath** (NVIDIA) · SciPy 2026
 </center>
 
 ---
+
+## Awkward Array
+
+<style scoped>
+img { display: block; margin: auto; }
+</style>
 
 ![w:760](figs/awkward_array.png)
 
@@ -408,6 +427,7 @@ numba-cuda and cuda-tile lets you write functions that execute in parallel on th
 Writing kernels requires some CUDA expertise. That's why we have cuda.compute - it's a library that lets you write custom functionality using higher-level tooling. It doesn't require any CUDA-specific knowledge. Let's see an example of what cuda.compute looks like.
 
 -->
+<!-- ASHWIN:BEGIN -->
 
 ## What is `cuda.compute`?
 
@@ -1001,13 +1021,18 @@ binary_transform(d_in1=muons1, d_in2=muons2,
 <div class="cols">
 <div>
 
-- <span class="cur">**85% of CUDA kernels** ported from CUDA C++ to pure Python</span>
+- <span class="cur">**Nearly all CUDA kernels** ported from CUDA C++ to pure Python</span>
 
 </div>
 <div>
 
 ![w:830](figs/port_ratio.png)
 
+- 114 kernels use **cuda.compute**
+- Remaining **17 kernels are already implemented**
+
+<div style="font-size: 20px; color: #4c8c00">Maxym Naumchyk</div>
+
 </div>
 </div>
 
@@ -1019,15 +1044,15 @@ binary_transform(d_in1=muons1, d_in2=muons2,
 <div class="cols">
 <div>
 
-- <span class="past">**85% of CUDA kernels** ported from CUDA C++ to pure Python</span>
+- <span class="past">**Nearly all CUDA kernels** ported from CUDA C++ to pure Python</span>
 - <span class="cur">**Rearchitecting for the GPU**: moving from `parents` to `offsets` also **speeds up the CPU**</span>
 
 </div>
 <div>
 
-![w:640](figs/layout.png)
+![w:640](figs/cpu_speedup_4056.png)
 
-<div class="note">the same <code>offsets</code> layout that maps ragged data onto GPU segmented algorithms also sped up Awkward's CPU reducers by about <b>4x</b> (awkward #4056)</div>
+<div class="note">the same <code>offsets</code> layout that maps ragged data onto GPU segmented algorithms also sped up Awkward's CPU kernels — <b>geomean 5× faster, 3.2× leaner</b> (awkward #4056)</div>
 
 </div>
 </div>
@@ -1040,7 +1065,7 @@ binary_transform(d_in1=muons1, d_in2=muons2,
 <div class="cols">
 <div>
 
-- <span class="past">**85% of CUDA kernels** ported from CUDA C++ to pure Python</span>
+- <span class="past">**Nearly all CUDA kernels** ported from CUDA C++ to pure Python</span>
 - <span class="past">**Rearchitecting for the GPU**: moving from `parents` to `offsets` also **speeds up the CPU**</span>
 - <span class="cur">**Awkward on CUDA is now even faster**</span>
 
@@ -1054,9 +1079,6 @@ binary_transform(d_in1=muons1, d_in2=muons2,
 </div>
 </div>
 
-
-
-
 ---
 
 ## Awkward Array: present and future
@@ -1064,7 +1086,7 @@ binary_transform(d_in1=muons1, d_in2=muons2,
 <div class="cols">
 <div>
 
-- <span class="past">**85% of CUDA kernels** ported from CUDA C++ to pure Python</span>
+- <span class="past">**Nearly all CUDA kernels** ported from CUDA C++ to pure Python</span>
 - <span class="past">**Rearchitecting for the GPU**: moving from `parents` to `offsets` also **speeds up the CPU**</span>
 - <span class="past">**Awkward on CUDA is now even faster**</span>
 - <span class="cur">**What is next: lazy execution**</span>
@@ -1097,11 +1119,11 @@ expr.compute(fuse=True)      # whole chain -> ONE kernel
 <div class="cols">
 <div>
 
-- <span class="past">**85% of CUDA kernels** ported from CUDA C++ to pure Python</span>
+- <span class="past">**Nearly all CUDA kernels** ported from CUDA C++ to pure Python</span>
 - <span class="past">**From `parents` to `offsets`**: the ragged layout maps straight onto segmented algorithms</span>
 - <span class="past">**Awkward on CUDA is now even faster**</span>
 - <span class="past">**What is next: lazy execution**</span>
-    - <span class="cur">The map fuses into the reduction — no intermediate buffer</span>
+    - <span class="cur">The map is fused into the reduction — no intermediate buffers</span>
 
 </div>
 <div>
@@ -1120,12 +1142,12 @@ expr.compute(fuse=True)      # whole chain -> ONE kernel
 <div class="cols">
 <div>
 
-- <span class="past">**85% of CUDA kernels** ported from CUDA C++ to pure Python</span>
+- <span class="past">**Nearly all CUDA kernels** ported from CUDA C++ to pure Python</span>
 - <span class="past">**From `parents` to `offsets`**: the ragged layout maps straight onto segmented algorithms</span>
 - <span class="past">**Awkward on CUDA is now even faster**</span>
 - <span class="past">**What is next: lazy execution**</span>
-    - <span class="past">The map fuses into the reduction — no intermediate buffer</span>
-    - <span class="cur">GPU dispatch- vs CPU bandwidth-bound</span>
+    - <span class="past">The map is fused into the reduction — no intermediate buffers</span>
+    - <span class="cur">GPU dispatch-bound vs. CPU bandwidth-bound</span>
 
 </div>
 <div>
@@ -1144,13 +1166,13 @@ expr.compute(fuse=True)      # whole chain -> ONE kernel
 <div class="cols">
 <div>
 
-- <span class="past">**85% of CUDA kernels** ported from CUDA C++ to pure Python</span>
+- <span class="past">**Nearly all CUDA kernels** ported from CUDA C++ to pure Python</span>
 - <span class="past">**From `parents` to `offsets`**: the ragged layout maps straight onto segmented algorithms</span>
 - <span class="past">**Awkward on CUDA is now even faster**</span>
 - <span class="past">**What is next: lazy execution**</span>
-    - <span class="past">The map fuses into the reduction — no intermediate buffer</span>
-    - <span class="past">GPU dispatch- vs CPU bandwidth-bound</span>
-    - <span class="cur">Transform + `sum` fused into one kernel; folded op stays flat</span>
+    - <span class="past">The map is fused into the reduction — no intermediate buffers</span>
+    - <span class="past">GPU dispatch-bound vs. CPU bandwidth-bound</span>
+    - <span class="cur">Transform and reduction execute as a single fused kernel</span>
 
 </div>
 <div>
@@ -1164,7 +1186,17 @@ expr.compute(fuse=True)      # whole chain -> ONE kernel
 
 ## Eager vs Fused Execution
 
-<div class="cols">
+<style scoped>
+.diagrams { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; align-items: start; flex: 0 0 auto; }
+.diagrams pre { font-size: 17px; }
+.diagrams h3 { margin: 0 0 4px 0; color: #013243; }
+.bottom { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 34px; align-items: center; flex: 1 1 auto; margin-top: 10px; }
+.bottom > div:last-child { display: flex; flex-direction: column; justify-content: flex-start; }
+.bottom ul { margin: 0; }
+.bottom li { margin: 12px 0; }
+</style>
+
+<div class="diagrams">
 <div>
 
 ### Eager
@@ -1181,6 +1213,9 @@ Memory
 Kernel
 ```
 
+</div>
+<div>
+
 ### Lazy + Fusion
 
 ```
@@ -1189,144 +1224,37 @@ Expression Graph
 One CUDA Kernel
 ```
 
+</div>
+</div>
+
+<div class="bottom">
+<div>
+
+![w:760](figs/lazy_fusion_kernels.png)
+
+<div class="note">nsys-verified launch count: N element-wise ops → 1 fused kernel.</div>
+
+</div>
+<div>
+
 - <span class="cur">fewer launches</span>
 - <span class="cur">less global memory traffic</span>
 - <span class="cur">better cache locality</span>
 
 </div>
+</div>
+
+---
+
+## How it works
+
+<div class="cols">
 <div>
 
-![w:880](figs/lazy_fusion_kernels.png)
-
-<div class="note">nsys-verified launch count: N element-wise ops → 1 fused kernel.</div>
+- <span class="cur">**Introspection**: `fusion_stats()` and `visualize(fused=True)` make the compiler's decision visible</span>
 
 </div>
-</div>
-
----
-
-## Performance
-
-*(Insert benchmark figures)*
-
-Suggested plots
-
-- Runtime vs dataset size
-
-- GPU speedup
-
-- Kernel launch count
-
-- Memory traffic
-
-Key observation
-
-> Fusion becomes increasingly beneficial as workloads grow.
-
----
-
-## Same Python API
-
-Users continue writing ordinary Python.
-
-```python
-events.muons[
-    events.muons.pt > 20
-].pt.sum()
-```
-
-No
-
-- CUDA C++
-- handwritten kernels
-- explicit memory management
-
----
-
-## Why This Matters
-
-| Traditional CUDA | cuda.compute + Awkward |
-|------------------|------------------------|
-| C++ kernels | Python |
-| Static kernels | Runtime-generated |
-| Many launches | Kernel fusion |
-| Manual optimization | Automatic |
-
-High-performance GPU programming becomes accessible to scientific Python users.
-
----
-
-## Conclusions
-
-- Irregular data deserves first-class GPU support.
-- Kernel fusion substantially reduces GPU overhead.
-- Users remain entirely in Python.
-- Runtime compilation enables near-C++ performance.
-
----
-
-## Outlook
-
-Future work
-
-- More Awkward operations
-- Additional CCCL primitives
-- Multi-GPU execution
-- Distributed execution
-- Additional backends
-
----
-
-## Thank You
-
-### Questions?
-
-Awkward Array
-
-https://github.com/scikit-hep/awkward
-
-https://awkward-array.org
-
----
-
-# Slide examples & figures — lazy execution / kernel fusion
-
-Every snippet below is copy-run verified against the branch (CPU shown so it runs
-anywhere; swap `ak.cpu.lazy` → `ak.cuda.lazy` for the GPU story). Figures are
-generated from the measured benchmark by `make_slide_figs.py`.
-
----
-
-## Example 1 — "What is next: lazy execution" (headline)
-
-A chain of ordinary element-wise operations, fused into a single kernel.
-
-```python
-import awkward as ak
-
-arr = ak.Array([[1.0, 2, 3], [4, 5], [6, 7, 8, 9]], backend="cuda")
-la  = ak.cuda.lazy(arr)          # wrap: nothing runs yet
-
-expr = la                        # a chain, written normally
-for _ in range(16):
-    expr = expr * 1.001 + 0.5    # 32 element-wise ops
-
-expr.fusion_stats()
-# -> {'elementwise_before': 32, 'fused_regions': 1, ...}   32 ops -> ONE kernel
-
-expr.compute(fuse=True)          # runs the single fused kernel
-```
-
-Talking point: **32 element-wise ops → 1 fused region → 1 GPU kernel**, and (fig
-below) up to **~90× faster** than eager, with fused time nearly flat as the chain
-grows.
-
----
-
-## Example 2 — introspection: see the fused plan
-
-`fusion_stats()` and `visualize(fused=True)` make the compiler's decision visible
-— good for a "how it works" slide.
+<div>
 
 ```python
 la = ak.cuda.lazy(arr)
@@ -1344,16 +1272,23 @@ print(pipeline.visualize(fused=True))
 #     FusedNode(leaves=2, expr='($0 > $1)')             <- compare, one kernel
 ```
 
-Talking point: fusion collapses the element-wise regions; the structural `filter`
-stays a boundary. The shared `t = la*2+1` is computed **once** and reused by both
-the filter input and the condition (single-use fusion = free CSE).
+<div class="note" style="margin-top:14px">Fusion collapses the element-wise regions; the structural <code>filter</code> stays a boundary. The shared <code>t = la*2+1</code> is computed <b>once</b> and reused by both the filter input and the condition (single-use fusion = free CSE).</div>
+
+</div>
+</div>
 
 ---
 
-## Example 3 — fusion is transparent (debug mode)
+## How it works
 
-`fuse=True` (default) and `fuse=False` are numerically identical; the no-fuse
-path keeps every intermediate visible for debugging.
+<div class="cols">
+<div>
+
+- <span class="past">**Introspection**: `fusion_stats()` and `visualize(fused=True)` make the compiler's decision visible</span>
+- <span class="cur">**Transparent (debug mode)**: `fuse=True` (default) and `fuse=False` are numerically identical; the no-fuse path keeps every intermediate visible for debugging</span>
+
+</div>
+<div>
 
 ```python
 expr = (ak.cuda.lazy(arr) * 2 + 1) * 3
@@ -1363,76 +1298,200 @@ expr.compute(fuse=False)   # per-op interpreter — identical result
 # both -> [[9, 15, 21], [27, 33], [39, 45, 51, 57]]
 ```
 
-lazy_fusion_reduce.png
+<div class="note" style="margin-top:14px">Fusion is a fast path, never a correctness dependency — anything it can't fuse (strings, regular/indexed layouts, mixed backends) falls back to the eager path automatically, with the same answer.</div>
 
-Talking point: fusion is a fast path, never a correctness dependency — anything it
-can't fuse (strings, regular/indexed layouts, mixed backends) falls back to the
-eager path automatically, with the same answer.
-
----
-
-## Example 4 — transform + reduction in one kernel
-
-The map fuses *into* the reduction — no intermediate buffer (this is what the
-"parents → offsets → segmented_reduce" slide sets up).
-
-```python
-la = ak.cuda.lazy(arr)
-total = (la * 2 + 1).sum()      # per-sublist sum of the scaled values
-total.compute(fuse=True)        # folded map -> segmented_reduce, one kernel
-```
-<div>
-
-![w:880](figs/lazy_fusion_reduce.png)
+</div>
 </div>
 
-Talking point (fig `lazy_fusion_reduce.png`): the folded-op reduction stays flat
-at ~0.18 ms as the map grows, while separate map+reduce scales with chain length.
 
 ---
 
-## Figures (generated by `make_slide_figs.py`, measured on A100 + CPU)
+## Performance
 
-| File | Use it for |
-|------|-----------|
-| `figs/lazy_fusion_flat_time.png` | **The money slide.** Eager time rises linearly (2→34 ms); fused time is flat (~0.4 ms). "That flat line *is* fusion." |
-| `figs/lazy_fusion_speedup.png` | Speedup vs chain length: GPU up to **~90×** and size-independent; CPU 2–8× (dispatch- vs bandwidth-bound). |
-| `figs/lazy_fusion_kernels.png` | nsys-verified launch count: **N element-wise ops → 1** fused kernel. |
-| `figs/lazy_fusion_reduce.png` | Transform + `sum` fused into one kernel; folded op stays flat. |
+<div class="cols">
+<div>
 
-Measured source data: `bench_lazy_fusion_results.md` (della A100) and `bench.json`
-(CPU). Regenerate with:
+- <span class="cur">Runtime vs dataset size</span>
 
-```bash
-python studies/cccl/make_slide_figs.py
-```
+</div>
+<div>
 
----
+![w:600](figs/lazy_ir_runtime_vs_size.png)
 
-## Numbers to quote (all measured, all in-repo)
+<div class="note">Eager runtime grows with the dataset — each op is a separate kernel and memory pass. The fused path stays far lower and flatter: the whole chain runs as one kernel, so the gap widens as data grows.</div>
 
-- **32 op chain → 1 kernel** (`fusion_stats`, nsys `cuda_gpu_kern_sum`).
-- **~90× on A100** at depth-16 (`bench_lazy_fusion_results.md`: 90.68× / 89.98×).
-- **Fused time flat**: 0.19 ms (2 ops) → 0.38 ms (32 ops); eager 2.2 → 34 ms.
-- **Size-independent on GPU** (200k and 2M speedups coincide); CPU win shrinks
-  with size (8.4× → 2.9×) because CPU is dispatch-bound, GPU is launch-bound.
+</div>
+</div>
 
 ---
 
-## Results
+## Performance
 
+<div class="cols">
+<div>
 
-We evaluated representative Awkward workloads:
+- <span class="past">Runtime vs dataset size</span>
+- <span class="cur">GPU speedup</span>
 
-- combinatorial matching
-- nested reductions
-- filtering
-- broadcasting
-- physics analysis pipelines
+</div>
+<div>
 
-using
+![w:600](figs/lazy_ir_gpu_speedup.png)
 
-- eager execution
-- fused execution
+<div class="note">Speedup over the eager path climbs with dataset size and then plateaus — once the GPU is saturated, fusion's win is size-independent (dispatch-bound, not bandwidth-bound).</div>
+
+</div>
+</div>
 
 ---
+
+## Performance
+
+<div class="cols">
+<div>
+
+- <span class="past">Runtime vs dataset size</span>
+- <span class="past">GPU speedup</span>
+- <span class="cur">Kernel launch count</span>
+
+</div>
+<div>
+
+![w:600](figs/lazy_ir_kernel_launches.png)
+
+<div class="note">The eager path launches one kernel per op, so the count rises with chain length; fusion collapses the whole chain to a single launch — the source of both the speedup and the lower overhead.</div>
+
+</div>
+</div>
+
+---
+
+## Performance
+
+<div class="cols">
+<div>
+
+- <span class="past">Runtime vs dataset size</span>
+- <span class="past">GPU speedup</span>
+- <span class="past">Kernel launch count</span>
+- <span class="cur">Memory traffic</span>
+
+<div class="note" style="margin-top:22px"><b>Key observation:</b> fusion becomes increasingly beneficial as workloads grow.</div>
+
+</div>
+<div>
+
+![w:600](figs/lazy_ir_memory_traffic.png)
+
+<div class="note">Eager writes every intermediate back to global memory and reads it again; fusion keeps intermediates in registers, so total bytes moved stays flat as the chain grows.</div>
+
+</div>
+</div>
+
+
+---
+
+
+<!-- _class: challenge -->
+
+## The future
+
+<div class="challenge-question">
+
+High-performance GPU programming becomes accessible to scientific Python users.
+
+</div>
+
+<style>
+section.challenge {
+  display: flex;
+  flex-direction: column;
+  justify-content: center !important;
+  align-items: center;
+  text-align: center;
+}
+
+section.challenge h1 {
+  margin-bottom: 48px;
+}
+
+.challenge-question {
+  max-width: 980px;
+  font-size: 42px;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #123f4d;
+}
+</style>
+
+
+---
+
+## Conclusions
+
+- <span class="cur">One program, not many kernels — 32 ops → 1 kernel, ~90× faster.</span>
+
+---
+
+
+## Conclusions
+
+- <span class="past">One program, not many kernels — 32 ops → 1 kernel, ~90× faster.</span>
+
+- <span class="cur">Python replaced CUDA C++ — and won.</span>
+
+---
+
+
+## Conclusions
+
+- <span class="past">One program, not many kernels — 32 ops → 1 kernel, ~90× faster.</span>
+
+- <span class="past">Python replaced CUDA C++ — and won.</span>
+
+- <span class="cur"> GPU‑first design sped up CPU too (~4×).</span>
+
+
+---
+
+## Conclusions
+
+- <span class="past">One program, not many kernels — 32 ops → 1 kernel, ~90× faster.</span>
+
+- <span class="past">Python replaced CUDA C++ — and won.</span>
+
+- <span class="past"> GPU‑first design sped up CPU too (~4×).</span>
+
+- <span class="cur">Awkward API unchanged — no kernels, no memory management.</span>
+
+---
+
+## Thank You
+
+
+### Questions?
+
+Acknowledgements
+
+• Awkward Array contributors
+• NVIDIA CUDA Python & CCCL team
+• IRIS-HEP
+• Princeton University
+
+Thank you!
+
+https://github.com/scikit-hep/awkward
+
+https://awkward-array.org
+
+<div style="display:flex; align-items:center; gap:34px; margin-top:16px;">
+<img src="figs/IRIS-HEP logo.png" height="56" />
+<img src="figs/Princeton logo.png" height="40" />
+</div>
+
+<div style="display:flex; align-items:flex-start; gap:16px; margin-top:16px;">
+<img src="figs/NSF logo.png" height="64" />
+<span style="font-size:11px; color:#45555b; white-space:nowrap;">This work was supported in part by the U.S. National Science Foundation through IRIS-HEP (NSF OAC-1836650, OAC-1450377, OAC-2103945, PHY-2121686, PHY-2323298)</span>
+</div>
+
+

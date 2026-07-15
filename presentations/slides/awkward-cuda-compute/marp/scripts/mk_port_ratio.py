@@ -1,6 +1,6 @@
 """Port-ratio figure for the 'present & future' slide.
-Recomputed from scikit-hep/awkward issue #3793: 103 of 120 kernel-migration
-sub-tasks complete = 85.8%. High-priority tier (reductions & sort) is 100%."""
+Recomputed from scikit-hep/awkward issue #3793: 114 of 131 kernels now run via
+cuda.compute (pure Python); the remaining 17 are already implemented."""
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
@@ -8,9 +8,9 @@ plt.rcParams.update({"font.family": "DejaVu Sans", "savefig.dpi": 200, "savefig.
 OUT = "/home/coder/scipy_proceedings/presentations/slides/awkward-cuda-compute/marp/figs"
 
 INK="#17303a"; GREEN="#4c8c00"; LGREEN="#e4f2d0"; GREY="#c3ccd0"; DGREY="#7c8a90"; RED="#b23b2e"
-DONE, TOTAL = 103, 120
+DONE, TOTAL = 114, 131
 REMAIN = TOTAL - DONE
-HEADLINE = "85%"   # 103/120 = 85.8%, reported as 85% to match the deck
+HEADLINE = "87%"   # 114/131 = 87.0%
 
 fig, ax = plt.subplots(figsize=(9.2, 3.5))
 ax.set_xlim(0, TOTAL); ax.set_ylim(0, 10); ax.axis("off")
@@ -34,9 +34,9 @@ ax.annotate("", xy=(DONE + REMAIN/2, y+h+0.05), xytext=(DONE + REMAIN/2, y+h+1.9
             arrowprops=dict(arrowstyle="-", color=DGREY, lw=1))
 
 # caption
-ax.text(0, 1.35, "103 of 120 kernel migrations complete",
-        fontsize=12.6, color=DGREY)
-ax.text(0, 0.5, "scikit-hep/awkward  issue #3793", fontsize=11.4, color=GREY, style="italic")
+ax.text(0, 1.35, "114 of 131 kernels via cuda.compute  ·  remaining 17 already implemented",
+        fontsize=10.5, color=DGREY)
+ax.text(0, 0.5, "scikit-hep/awkward  issue #3793", fontsize=9.5, color=GREY, style="italic")
 
 fig.savefig(f"{OUT}/port_ratio.png"); plt.close(fig)
 print(f"wrote port_ratio.png  ({DONE}/{TOTAL} = {DONE/TOTAL*100:.1f}%, shown as {HEADLINE})")
