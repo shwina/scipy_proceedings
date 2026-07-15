@@ -642,7 +642,7 @@ from cuda.compute import (CountingIterator, TransformIterator,
                           reduce_into, OpKind)
 import numpy as np
 
-counting = CountingIterator(np.int32(0))          # 0, 1, 2, 3, ...
+counting = CountingIterator(np.int32(0))        # 0, 1, 2, 3, ...
 squares  = TransformIterator(counting, lambda i: i * i)
 
 # sum of the first n squares
@@ -651,7 +651,6 @@ reduce_into(d_in=squares, d_out=out, num_items=n,
 
 # no array was ever materialized: the integers and their
 # squares are produced on the fly, inside the reduction
-
 assert out[0] == sum(k * k for k in range(n))   # 1**2 + 2**2 + ... + (n-1)**2
 ```
 
@@ -664,18 +663,20 @@ assert out[0] == sum(k * k for k in range(n))   # 1**2 + 2**2 + ... + (n-1)**2
 ## `cuda.compute` features
 
 <!--
-Another important feature of cuda.compute is the ability to work with user-defined types.
-These can be arbitrarily nested struct types.
-So if you have data laid out as an array of structures, cuda.compute can work with that quite naturally.
-In the code example, I have an array of pixels where each pixel is a compound data type composed
-of RGB components. 
-I can define a custom data type in cuda.compute using the gpu_struct deocrator.
-Then, I can 
+Another important feature of cuda.compute is the ability to work with
+user-defined types.  These can be arbitrarily nested struct types.  So
+if you have data laid out as an array of structures, cuda.compute can
+work with that quite naturally.  In the code example, I have an array
+of pixels where each pixel is a compound data type composed of RGB
+components.  I can define a custom Pixel data type in cuda.compute
+using the gpu_struct deocrator.  Then, I can define a tranasformation
+function that operators on pixels, and use that with the unary_transform
+function.
 
-
-
+You can see that this combination of custom data types and
+customizable algorithms makes cuda.compute really flexible for lots of 
+different types of applications.
 -->
-
 
 <div class="cols">
 <div>
@@ -702,7 +703,7 @@ def luminance(p: Pixel) -> np.int32:
     return (299 * p.r + 587 * p.g + 114 * p.b) // 1000
 
 # compute the luminance of each pixel:
-unary_transform(d_in=d_rgb, d_out=gray, opp=luminance, num_items=n)
+unary_transform(d_in=d_rgb, d_out=gray, op=luminance, num_items=n)
 ```
 
 </div>
@@ -712,6 +713,18 @@ unary_transform(d_in=d_rgb, d_out=gray, opp=luminance, num_items=n)
 ---
 
 ## `cuda.compute` features
+
+
+<!--
+Everything you've seen so far is JIT compiled by default. This is pretty much by necessity because the operators and data types are defined at runtime by the user, and we can't pre-compile algorithms to perform efficiently for every given operator and data type.
+
+JIT has pros and cons. The pros are that we can produce optimized kernels by incorporating runtime inforamtion. Another, huge pro is in terms of pacakge size. cuda.compute is a tiny dependency, and if you build on top of it, you don't have to ship any pre-compiled CUDA code.
+
+BUT, there are definitely times when JIT times are too large for the end user. Of course, we have some caching of JIT artifacts but in some cases, even the first invocation needs to be fast.
+
+For those cases we do support an ahead-of-time compilation workflow by enabling serialization and deserialization of algorithms. You can see that this can dramatically reduce the csot of first invocation.
+-->
+
 
 <div class="cols">
 <div>
@@ -765,6 +778,12 @@ alg(d_in=x, d_out=y, op=square, num_items=n)
 
 ## Awkward Array algorithms built with `cuda.compute`
 
+<!-- OK - so how can we use cuda.compute to implement awkward arrays on the GPU?
+Recall that an awkward array is really two arrays; a data array storing values,
+and an offsets array representing how that data is chunked into rows.
+-->
+
+
 <div class="cols">
 <div>
 
@@ -783,6 +802,10 @@ alg(d_in=x, d_out=y, op=square, num_items=n)
 
 ## Awkward Array algorithms built with `cuda.compute`
 
+<!-- Now, consider an awkward array operation like argmin, which computes the
+_index_ of the minimum value within each row...
+-->
+ 
 <div class="cols">
 <div>
 
@@ -809,6 +832,12 @@ ak.argmin(data, axis=1)   # [1, None, 1]
 
 ## Awkward Array algorithms built with `cuda.compute`
 
+<!-- 
+In the old CUDA backend of Awkward Array, implementing this argmin operation involved three
+separate CUDA C++ kernels; about 150 lines of code; and it was not easy to write, debug or maintain.
+-->
+
+
 <div class="cols">
 <div>
 
@@ -828,6 +857,13 @@ ak.argmin(data, axis=1)   # [1, None, 1]
 ---
 
 ## Awkward Array algorithms built with `cuda.compute`
+
+<!-- 
+Now, here is the cuda.compute version. It implements argmin using unary_transform.
+Each row is assigned a single thread, and each thread independently computes the argmin for that row.
+
+You can see that this implementation is a lot less code than the CUDA C++ implementation.
+-->
 
 <div class="cols">
 <div>
@@ -862,6 +898,12 @@ unary_transform(d_in=CountingIterator(0),
 
 ## Awkward Array algorithms built with `cuda.compute`
 
+<!-- 
+But not only is it much more maintainable, it's also signficantly faster. Algorithms like reductions, sorts, and
+even transforms - are very tricky to get right in CUDA. Because cuda.compute uses painstakingly optimized implementations
+`of these core algorithms, it can deliver exceptional performance. We see this as a (whatever) times faster argmin.
+-->
+
 <div class="cols">
 <div>
 
@@ -884,6 +926,12 @@ unary_transform(d_in=CountingIterator(0),
 
 ## Kernel fusion
 
+<!-- 
+The last thing I  want to talk about is kernel fusion, as it is the key to how cuda.compute can help speed up your libraries and applications..
+
+What is kernel fusion?
+-->
+
 <div class="cols">
 <div>
 
@@ -901,6 +949,19 @@ unary_transform(d_in=CountingIterator(0),
 ---
 
 ## Kernel fusion
+
+<!-- 
+Let's look at this with an example. Say I have an array/tensor and I want to compute the absolute sum...
+
+
+Now, the way you would do this in PyTorch is ...
+This kind of compiler-driven or "implicit" fusion is the way many of us think about kernel fusion.
+But, it tends to be a black box - the details about what is being fused and how are not clear to the developer. And
+there are certainly scenarios where compilers won't always fuse operations that can be fused.
+
+In contrast ...
+-->
+
 
 <div class="cols">
 <div>
@@ -997,7 +1058,7 @@ class Muon:
     phi: float32
     charge: int32
 
-def mass(m1, m2):
+def mass(m1: Muon, m2: Muon) -> float32:
     return (2 * m1.pt * m2.pt * (cosh(m1.eta - m2.eta)
                               -  cos(m1.phi - m2.phi))) ** 0.5
 
