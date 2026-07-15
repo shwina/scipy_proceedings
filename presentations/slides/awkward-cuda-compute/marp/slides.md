@@ -37,7 +37,9 @@ style: |
   section.sec strong { color: #ffffff; }
   section.sec header, section.sec footer, section.sec:after { display: none; }
 ---
+<!-- Good afternoon, everyone. Thanks for being here. I'm Ianna Osborne, from Princeton, and I work on Awkward Array. I'm joined by Ashwin Srinath from NVIDIA. -->
 
+<!-- Our talk is about one question: how do you take high-level Python operations on irregular data and turn them into efficient GPU kernels? I'll spend the next few minutes on why that's hard, Ashwin will show you the tool that makes it possible, and then I'll come back with what it means for Awkward Array and where we're headed. -->
 <!-- _class: sec -->
 
 # GPU-Accelerated Awkward Arrays with CUDA Python
@@ -48,6 +50,9 @@ Ianna Osborne (Princeton) · Ashwin Srinath (NVIDIA) · SciPy 2026
 
 
 ---
+<!-- Here's the starting point. Real scientific data is rarely a neat rectangle. One collision event has three muons, the next has none, the next has five.
+
+If you want to put that in a NumPy array, you have to pad it — fill the empty slots and carry a mask. Awkward Array stores the same data without padding: each row is exactly as long as it needs to be. Same data, different representation — and the difference matters. -->
 
 ## Scientific data isn't rectangular
 
@@ -92,6 +97,10 @@ Ianna Osborne (Princeton) · Ashwin Srinath (NVIDIA) · SciPy 2026
 </center>
 
 ---
+
+<!-- Now here's the tension. GPUs are happiest with regular, rectangular work — every thread does the same amount. Jagged arrays break that assumption. One row has three elements, another has six, another has one.
+
+So you get uneven work per thread, and that unevenness is exactly what limits GPU efficiency. The data we care about is the data GPUs handle worst. -->
 
 ## GPUs prefer regular work
 
@@ -138,6 +147,8 @@ Ianna Osborne (Princeton) · Ashwin Srinath (NVIDIA) · SciPy 2026
 
 ---
 
+<!-- Quick context on Awkward Array itself, for anyone new to it. It's a library for nested, variable-length data with a NumPy-like interface — you slice it, you broadcast, you reduce, just like NumPy, but the arrays can be ragged. It's widely used in particle physics and beyond. -->
+
 ## Awkward Array
 
 <style scoped>
@@ -147,6 +158,10 @@ img { display: block; margin: auto; }
 ![w:760](figs/awkward_array.png)
 
 ---
+
+<!-- The storage question is actually solved, and elegantly. Take events.muons.pt. Under the hood, Awkward keeps one flat, contiguous buffer of all the values — the content — plus a small offsets array that says where each row starts and stops.
+
+No padding, no wasted slots, just compact contiguous memory. That layout is great for the GPU too. So storage isn't our problem. -->
 
 ## Storage solved
 
@@ -291,6 +306,10 @@ events.muons.pt
 
 ---
 
+<!-- Execution is the problem. In the eager model, every operation is its own kernel. It reads from global memory, writes its result back to global memory, and then the next kernel reads that back in.
+
+For a real formula that's a lot of round trips. Those intermediate arrays — the traffic in and out of global memory — end up dominating the runtime. The compute is cheap; moving the data is expensive. -->
+
 ## But execution...
 
 <div class="pipeline">
@@ -372,6 +391,14 @@ events.muons.pt
 </style>
 
 ---
+
+<!-- So that's the challenge, and it's the question that drives the whole talk:
+
+Can we compile an entire Awkward computation into one optimized GPU program? — instead of a chain of separate kernels each paying that memory cost.
+
+To answer that, we need the right tool. And for that, I'll hand over to Ashwin, who'll introduce cuda.compute.
+
+    → HAND OFF TO ASHWIN. "Ashwin, over to you." -->
 
 <!-- _class: challenge -->
 
@@ -1119,7 +1146,9 @@ binary_transform(d_in1=muons1, d_in2=muons2,
 </div>
 
 
----
+<!-- Thanks, Ashwin. So that's the tool — now let me show you what it's done for Awkward, and where we're taking it.
+
+The headline first: nearly all of Awkward's CUDA kernels have moved from hand-written CUDA C++ to pure Python. A hundred and fourteen already run on cuda.compute, and the remaining seventeen are implemented too. That's most of the library's GPU backend, rewritten in Python — and a lot of the credit for that goes to Maxym Naumchyk. -->
 
 ## Awkward Array: present and future
 
@@ -1144,6 +1173,10 @@ binary_transform(d_in1=muons1, d_in2=muons2,
 
 ---
 
+<!-- Here's a result that surprised us. To map ragged data onto GPU segmented algorithms, we changed Awkward's internal layout — from a parents array to an offsets array.
+
+That same change sped up the CPU kernels: geometric mean about five times faster and three times leaner on peak memory. Reducers and boolean ops carry the speed; argsort collapses a huge temporary buffer. We rearchitected for the GPU and got a CPU win for free — that's awkward pull request 4056. -->
+
 ## Awkward Array: present and future
 
 <div class="cols">
@@ -1165,6 +1198,8 @@ binary_transform(d_in1=muons1, d_in2=muons2,
 
 ---
 
+<!-- And on the GPU itself, the new path is faster than the old hand-written one. These are high-energy-physics queries from the ADL benchmark, measured GPU-to-GPU — the previous CUDA C++ kernels against cuda.compute, compute stage only. So this is a like-for-like comparison, same hardware, and Python comes out ahead. -->
+
 ## Awkward Array: present and future
 
 <div class="cols">
@@ -1185,6 +1220,10 @@ binary_transform(d_in1=muons1, d_in2=muons2,
 </div>
 
 ---
+
+<!-- Now, where is this going? Lazy execution. You wrap an array with lazy() and nothing runs yet. You write a chain of element-wise operations completely normally — here, sixteen of them in a loop. Then you call compute, and the whole chain becomes one kernel.
+
+That's up to about ninety times faster than running each op eagerly. Let me show you that result properly. -->
 
 ## Awkward Array: present and future
 
@@ -1215,9 +1254,12 @@ expr.compute(fuse=True)      # whole chain -> ONE kernel
 </div>
 </div>
 
-<!-- ASHWIN:END -->
 
 ---
+
+<!-- This is the measurement behind that claim. We fuse the map straight into the reduction, with no intermediate buffers.
+
+Look at the two lines. The eager time rises linearly as the data grows — two milliseconds, up to thirty-four. The fused time is flat, around four tenths of a millisecond, all the way across. That flat line is fusion. -->
 
 ## Awkward Array: present and future
 
@@ -1242,7 +1284,12 @@ expr.compute(fuse=True)      # whole chain -> ONE kernel
 
 ---
 
+<!-- Slide 32 — And the speedup tells you why. On the GPU it climbs up to about ninety times, and — this is the key part — it's size-independent. The GPU is dispatch-bound: the win comes from launching one kernel instead of many.
+
+On the CPU you still win, two to eight times, but it shrinks with size, because the CPU is bandwidth-bound — there you're saving memory passes, not launches. Same idea, two different bottlenecks. -->
+
 ## Awkward Array: present and future
+
 
 <div class="cols">
 <div>
@@ -1266,6 +1313,10 @@ expr.compute(fuse=True)      # whole chain -> ONE kernel
 
 ---
 
+<!-- Slide 33 — A single fused kernel
+
+Concretely, the transform and the reduction execute as one fused kernel. The intermediate never exists. That's the whole trick, and everything after this is just measuring how much it buys us. -->
+
 ## Awkward Array: present and future
 
 <div class="cols">
@@ -1288,6 +1339,12 @@ expr.compute(fuse=True)      # whole chain -> ONE kernel
 </div>
 
 ---
+
+<!-- Slide 34 — Eager vs Fused Execution
+
+Here's the contrast side by side. Eager: kernel, memory, kernel, memory, kernel — every step round-tripping through global memory. Lazy plus fusion: one expression graph collapses into a single CUDA kernel.
+
+That gives you three things — fewer launches, less global memory traffic, and better cache locality — and the launch count on the right is nsys-verified: N element-wise ops really do become one kernel. -->
 
 ## Eager vs Fused Execution
 
@@ -1351,6 +1408,12 @@ One CUDA Kernel
 
 ---
 
+<!-- Slide 35 — How it works: introspection
+
+You don't have to take the fusion on faith. fusion_stats() and visualize() show you exactly what the compiler decided.
+
+Here it collapses the element-wise regions into fused nodes, while the structural filter stays a boundary. And notice the shared subexpression, t = la*2+1, is computed once and reused by both branches — you get common-subexpression elimination for free. -->
+
 ## How it works
 
 <div class="cols">
@@ -1384,6 +1447,12 @@ print(pipeline.visualize(fused=True))
 
 ---
 
+<!-- Slide 36 — How it works: transparent (debug mode)
+
+It's also transparent when you're debugging. fuse=True, the default, and fuse=False give numerically identical results — the no-fuse path just keeps every intermediate visible.
+
+The point is that fusion is a fast path, never a correctness dependency. Anything it can't fuse — strings, indexed layouts, mixed backends — quietly falls back to the eager path and gives you the same answer. -->
+
 ## How it works
 
 <div class="cols">
@@ -1411,6 +1480,13 @@ expr.compute(fuse=False)   # per-op interpreter — identical result
 
 ---
 
+<!-- Slides 37–40 — Performance
+
+Now the numbers, and I'll build these up one at a time.
+
+    (37) Runtime vs dataset size. Eager grows with the data — one kernel and one memory pass per op. The fused path stays low and flat, so the gap widens as the data grows.
+     -->
+
 ## Performance
 
 <div class="cols">
@@ -1429,6 +1505,8 @@ expr.compute(fuse=False)   # per-op interpreter — identical result
 </div>
 
 ---
+
+<!-- (38) GPU speedup. It climbs and then plateaus. Once the GPU is saturated the win is size-independent — again, dispatch-bound, not bandwidth-bound. -->
 
 ## Performance
 
@@ -1450,6 +1528,8 @@ expr.compute(fuse=False)   # per-op interpreter — identical result
 
 ---
 
+<!-- (39) Kernel launch count. Eager launches one kernel per op, so the count climbs with the chain; fusion collapses the whole chain to a single launch. That's the root cause of everything else. -->
+
 ## Performance
 
 <div class="cols">
@@ -1470,6 +1550,10 @@ expr.compute(fuse=False)   # per-op interpreter — identical result
 </div>
 
 ---
+
+<!-- (40) Memory traffic. Eager writes every intermediate out and reads it back; fusion keeps intermediates in registers, so total bytes moved stays flat.
+
+The one line to take away: fusion becomes increasingly beneficial as workloads grow. The bigger the problem, the more you win. -->
 
 ## Performance
 
@@ -1496,6 +1580,9 @@ expr.compute(fuse=False)   # per-op interpreter — identical result
 
 ---
 
+<!-- Slide 41 — The future
+
+Step back for a second. What this really means is that high-performance GPU programming becomes accessible to ordinary scientific Python users — no CUDA C++, no hand-written kernels, no manual memory management. You write Awkward, you get a fused GPU program. -->
 
 <!-- _class: challenge -->
 
@@ -1532,12 +1619,23 @@ section.challenge h1 {
 
 ---
 
+<!-- Slides 42–45 — Conclusions
+
+Let me pull it together.
+
+    One program, not many kernels — thirty-two operations become one kernel, about ninety times faster.
+     -->
+
 ## Conclusions
 
 - <span class="cur">One program, not many kernels — 32 ops → 1 kernel, ~90× faster.</span>
 
 ---
 
+<!-- Slides 42–45 — Conclusions
+
+    Python replaced CUDA C++ — and won.
+     -->
 
 ## Conclusions
 
@@ -1547,6 +1645,11 @@ section.challenge h1 {
 
 ---
 
+<!-- Slides 42–45 — Conclusions
+
+
+    And the GPU-first redesign sped up the CPU too, by about four times.
+ -->
 
 ## Conclusions
 
@@ -1559,6 +1662,10 @@ section.challenge h1 {
 
 ---
 
+<!-- Slides 42–45 — Conclusions
+
+    All of this with the Awkward API unchanged — no kernels, no memory management for the user. -->
+
 ## Conclusions
 
 - <span class="past">One program, not many kernels — 32 ops → 1 kernel, ~90× faster.</span>
@@ -1570,6 +1677,14 @@ section.challenge h1 {
 - <span class="cur">Awkward API unchanged — no kernels, no memory management.</span>
 
 ---
+
+<!-- Slide 46 — Thank You
+
+That's it from us. Thank you to the Awkward Array contributors, the NVIDIA CUDA Python and CCCL team, IRIS-HEP, and Princeton — and to the NSF for supporting this work.
+
+The code is on GitHub and the docs are at awkward-array.org. We'd love your questions.
+
+    → Open for questions. Ashwin and I can both take these. -->
 
 ## Thank You
 
