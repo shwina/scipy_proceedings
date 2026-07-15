@@ -29,3 +29,4 @@ presentations/slides/awkward-cuda-compute/marp/scripts/**/*.json
 # awkward-cuda-compute talk: previous / reference presentations (not part of the build)
 presentations/slides/awkward-cuda-compute/*.pptx
 presentations/slides/awkward-cuda-compute/S81531.pdf
+presentations/slides/awkward-cuda-compute/marp/slides.html

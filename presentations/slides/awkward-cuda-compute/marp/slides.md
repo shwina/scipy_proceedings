@@ -597,10 +597,10 @@ As we saw before with the sorting-by-last-digit example, these algorithms are hi
 ## `cuda.compute` features
 
 <!--
-That brings us to iterators.
+The other important concept in cuda.compute is iterators. Not to be confused with Python iterators (but similar in spirit). Iterators represent sequences that occupy no physical GPU memory. Instead, their values are computed on the fly during kernel execution.
+
+Some examples..
 -->
-
-
 
 <div class="cols">
 <div>
@@ -620,6 +620,13 @@ That brings us to iterators.
 ---
 
 ## `cuda.compute` features
+
+<!--
+And here is a corete example using iterators. 
+
+In this example, we're computing the sum of squares of the sequence 0, 1, 2, 3 up to N. We do this using two iterators and one algorithm. The first iterator...
+-->
+
 
 <div class="cols">
 <div>
@@ -655,6 +662,11 @@ assert out[0] == sum(k * k for k in range(n))   # 1**2 + 2**2 + ... + (n-1)**2
 ---
 
 ## `cuda.compute` features
+
+<!--
+We've talked about cuda.compute allowing you to customize 
+-->
+
 
 <div class="cols">
 <div>

@@ -10,7 +10,7 @@
 MARP ?= marp
 PY   ?= python3
 SRC  := slides.md
-DEPS := $(SRC) marp.config.js scripts/marp-lineno.js $(wildcard figs/*.png)
+#DEPS := $(SRC) marp.config.js scripts/marp-lineno.js $(wildcard figs/*.png)
 
 # Headless Chrome for PDF rendering. This dev box needs a --no-sandbox wrapper;
 # it is exported only if present, so a normal Chrome install elsewhere still works.
