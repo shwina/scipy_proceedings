@@ -12,11 +12,16 @@ style: |
   code { background: #eef3f5; padding: 1px 5px; border-radius: 4px; }
   .cols { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 34px; flex: 1 1 auto; align-items: stretch; }
   .cols > div:last-child { display: flex; flex-direction: column; justify-content: center; }
+  .cols.even { grid-template-columns: 1fr 1fr; align-items: start; align-content: center; }
+  .cols.even > div:last-child { justify-content: flex-start; }
   .cols ul { margin-top: 16px; }
   .cols li { margin: 12px 0; }
   .cur  { color: #013243; font-weight: 700; }
   .past, .past strong { color: #9aa8ad; font-weight: 400; }
   pre { font-size: 15px; margin: 0; }
+  pre code { counter-reset: cln; }
+  pre code .cln { counter-increment: cln; }
+  pre code .cln::before { content: counter(cln); display: inline-block; width: 1.8em; margin-right: 0.9em; text-align: right; color: #aab6bb; }
   .note { font-size: 16px; color: #45555b; margin: 3px 0 12px 4px; }
   .note b { color: #013243; }
   .slow { color: #b23b2e; font-weight: 700; }
@@ -45,7 +50,7 @@ Ianna Osborne (Princeton) · **Ashwin Srinath** (NVIDIA) · SciPy 2026
 
 ## Scientific data isn't rectangular
 
-<div class="cols">
+<div class="cols even">
 <div>
 
 <span class="cur">NumPy</span>
@@ -84,7 +89,7 @@ Ianna Osborne (Princeton) · **Ashwin Srinath** (NVIDIA) · SciPy 2026
 
 ## GPUs prefer regular work
 
-<div class="cols">
+<div class="cols even">
 <div>
 
 <span class="cur">Traditional GPU algorithms assume</span>
@@ -384,7 +389,25 @@ section.challenge h1 {
 
 ---
 
-<!-- ASHWIN:BEGIN -->
+<!--
+cc is one of many libraries in the "CUDA Python" ecosystem.
+
+A collection of libraries exposing the capabilities of CUDA to Python developers that were previously only available from C or C++.
+
+cuda-core and cuda-bindings 
+- let you work directly with the CUDA runtime and driver and let you:
+  - allocate GPU memory
+  - schedule work on the GPU
+  - compile CUDA programs
+
+nvmath-python provides optimized linear algebra, random numbers, and FFTs.
+
+numba-cuda and cuda-tile lets you write functions that execute in parallel on the GPU (we call these kernels).
+
+
+Writing kernels requires some CUDA expertise. That's why we have cuda.compute - it's a library that lets you write custom functionality using higher-level tooling. It doesn't require any CUDA-specific knowledge. Let's see an example of what cuda.compute looks like.
+
+-->
 
 ## What is `cuda.compute`?
 
@@ -398,6 +421,8 @@ section.challenge h1 {
 
 ![w:760](figs/ecosystem.png)
 
+<div class="note" style="text-align:center"><a href="https://nvidia.github.io/cuda-python/" style="color:#6f93d6">https://nvidia.github.io/cuda-python/</a></div>
+
 </div>
 </div>
 
@@ -405,6 +430,23 @@ section.challenge h1 {
 ---
 
 ## What is `cuda.compute`?
+
+
+---
+
+<!--
+In this code example, we have a CuPy array that we want to sort, but we don't want a regular numeric sort. Instead we want to sort by the last digit.
+
+To do this with cuda.compute we can use the merge_sort function, and provide a custom comparator defined as a Python lambda. That comparator tells cuda.compute how to compare any two values.
+
+At the end, the output array holds the sorted values and you can see they are sorted by the last digit.
+
+This is a very simple example, but it shows a few important features of cuda.compute
+
+- first, cuda.compute isn't an array or tensor frameworks. Instead, you can pass cupy arrays or pytorch tensors etc to it as the input and output arguments. It's meant to be used WITH these libraries.
+- second, a major feature of cuda.compute is that it's composed of generic algorithms. We implemented one kind of sort here, but you can provide a different comparator. It's designed to be flexible.
+-->
+
 
 <div class="cols">
 <div>
@@ -438,6 +480,11 @@ merge_sort(d_in_keys=data_in, d_out_keys=data_out,
 
 ## What is `cuda.compute`?
 
+<!--
+In terms of level of abstraction, cuda.compute sits somewhere between high-level array or tensor libraries and low-level CUDA/C++ code. If you look underneath CuPy or PyTorch today, you'll see a significant amount of CUDA C++ code. The goal of cuda.compute is to eliminate the need for architecting libraries in this way, and keep things in pure Python.
+-->
+
+
 <div class="cols">
 <div>
 
@@ -457,6 +504,12 @@ merge_sort(d_in_keys=data_in, d_out_keys=data_out,
 ---
 
 ## What is `cuda.compute`?
+
+
+<!--
+cuda.compute takes its inspiration from C++ algorithms and iterators. The code snippet on top shows how you would compute sum of squares using the Thrust C++ library. On the bottom is the equivalent Python. The similarity doesn't end with just the design. In fact the Python program is ultimately going to call down to the exact same CUDA kernels as the Thrust program and you should expect to see identical performance between the two.
+-->
+
 
 <div class="cols">
 <div>
@@ -499,6 +552,12 @@ reduce_into(d_in=squares, d_out=out, num_items=n,
 
 ## `cuda.compute` features
 
+<!--
+At its core, `cuda.compute` is a collection of algorithms, like reduce, scan, sort, and transform. And while you don't see it, the implementation of these algorithms is in CUDA C++. That code is painstakingly optimized and tuned for every CUDA architecture supported by NVIDIA so you're guaranteed to see best-in-class performance no matter where you run them (and with no tuning efforts on your part).
+
+As we saw before with the sorting-by-last-digit example, these algorithms are highly generic so you can customize them and combine them in clever ways to solve the problem at hand.
+-->
+
 <div class="cols">
 <div>
 
@@ -516,6 +575,12 @@ reduce_into(d_in=squares, d_out=out, num_items=n,
 ---
 
 ## `cuda.compute` features
+
+<!--
+That brings us to iterators.
+-->
+
+
 
 <div class="cols">
 <div>

@@ -11,6 +11,7 @@ libs=[
  ("cuda.compute",  "Composable parallel algorithms", LGREEN, GREEN),
  ("cuda.tile",     "Tile-based GPU kernels", LGREY, GREY),
  ("nvmath-python", "Pythonic NVIDIA math libraries", LGREY, GREY),
+ ("numba-cuda",    "CUDA kernels in Python", LGREY, GREY),
  ("…",            "and more", LGREY, GREY),
 ]
 n=len(libs); w=2.25; gap=0.15; total=n*w+(n-1)*gap
