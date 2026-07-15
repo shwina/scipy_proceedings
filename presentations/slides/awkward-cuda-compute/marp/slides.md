@@ -457,9 +457,6 @@ Writing kernels requires some CUDA expertise. That's why we have cuda.compute - 
 
 ## What is `cuda.compute`?
 
-
----
-
 <!--
 In this code example, we have a CuPy array that we want to sort, but we don't want a regular numeric sort. Instead we want to sort by the last digit.
 
@@ -530,7 +527,6 @@ In terms of level of abstraction, cuda.compute sits somewhere between high-level
 ---
 
 ## What is `cuda.compute`?
-
 
 <!--
 cuda.compute takes its inspiration from C++ algorithms and iterators. The code snippet on top shows how you would compute sum of squares using the Thrust C++ library. On the bottom is the equivalent Python. The similarity doesn't end with just the design. In fact the Python program is ultimately going to call down to the exact same CUDA kernels as the Thrust program and you should expect to see identical performance between the two.
