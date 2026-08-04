@@ -9,7 +9,7 @@ project:
     Python-callable primitives from the CUB and Thrust libraries—with kernel fusion handled
     by the library—so contributors write pure Python and obtain C++-level GPU performance.
   authors:
-    - name: Ashwin Trikuta Srinath
+    - name: Ashwin Srinath
       email: ashwint@nvidia.com
       affiliations:
         - NVIDIA Corporation
@@ -43,6 +43,9 @@ project:
         - cub
         - cuda-coop
         - awkward-issue-3793
+        - awkward-pr-4056
+        - awkward-issue-4141
+        - awkward-pr-4173
         - uproot
   exports:
     - id: pdf

@@ -29,3 +29,6 @@ presentations/slides/awkward-cuda-compute/marp/scripts/**/*.json
 # awkward-cuda-compute talk: previous / reference presentations (not part of the build)
 presentations/slides/awkward-cuda-compute/*.pptx
 presentations/slides/awkward-cuda-compute/S81531.pdf
+
+# Per-machine agent permission grants (local to a checkout, not shared config).
+**/.claude/settings.local.json

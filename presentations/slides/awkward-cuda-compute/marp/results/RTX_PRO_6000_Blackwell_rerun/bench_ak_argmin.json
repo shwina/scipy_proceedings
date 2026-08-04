@@ -1,0 +1,9 @@
+{
+  "device": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+  "num_segments": 5000000,
+  "n_elements": 37508050,
+  "reps": 30,
+  "before_ms": 0.9572625000373591,
+  "after_ms": 0.3854985000089073,
+  "agree": true
+}

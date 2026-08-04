@@ -1,0 +1,4 @@
+NVIDIA RTX PRO 6000 Blackwell Server Edition
+machine label: RTX_PRO_6000_Blackwell_rerun
+NVIDIA RTX PRO 6000 Blackwell Server Edition, 97887 MiB
+Cuda compilation tools, release 13.2, V13.2.51

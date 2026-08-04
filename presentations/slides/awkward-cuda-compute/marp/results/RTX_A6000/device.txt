@@ -1,4 +1,5 @@
 Folder name: RTX_A6000  (chosen for the archive)
 Actual device measured on: NVIDIA RTX 6000 Ada Generation (AD102, compute capability 8.9)
 NOTE: this is the "RTX 6000 Ada", not the Ampere "RTX A6000" - same folder name, different chip.
-The paper references only the B200 results (results/B200/).
+The paper references the RTX PRO 6000 Blackwell results (results/RTX_PRO_6000_Blackwell_rerun/).
+results/B200/ was never populated; no B200 run exists.

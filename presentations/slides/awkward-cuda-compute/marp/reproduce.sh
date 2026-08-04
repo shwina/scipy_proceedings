@@ -73,6 +73,26 @@ uv pip install --python "$PY" $TORCH_SPEC \
 uv pip install --python "$PY" nvidia-nvjitlink-cu13 >/dev/null 2>&1 || true
 uv pip uninstall --python "$PY" nvidia-nvjitlink-cu12 >/dev/null 2>&1 || true
 
+# Same class of problem, and the one that actually bites: torch's cu128 wheel
+# depends on cuda-bindings ~12.x, so installing it DOWNGRADES cuda-bindings from
+# 13.x to 12.9.x and drags in cuda-toolkit 12.8. cuda.compute then fails to build
+# any algorithm on sm_120 ("RuntimeError: Failed to build unary transform") and
+# every cuda.compute benchmark below silently records TODO while the cupy and
+# torch ones still succeed -- which makes it look like a cuda.compute bug rather
+# than an environment one. Restore the CUDA 13 bindings after torch.
+uv pip install --python "$PY" "cuda-bindings==13.3.1" >/dev/null 2>&1 || true
+uv pip uninstall --python "$PY" cuda-toolkit >/dev/null 2>&1 || true
+
+# Fail fast if the stack is broken, rather than emitting a results file of TODOs.
+"$PY" - <<'PYCHK' || { echo "ERROR: cuda.compute cannot build on this GPU; fix the env before trusting results."; exit 1; }
+import cupy as cp
+from cuda.compute import unary_transform
+x = cp.arange(8, dtype=cp.float64); y = cp.empty_like(x)
+unary_transform(d_in=x, d_out=y, op=lambda v: v * v, num_items=8)
+assert float(y[3]) == 9.0
+print("  cuda.compute smoke test OK")
+PYCHK
+
 # ---- 4. run the benchmarks -------------------------------------------------
 echo
 echo "-- running benchmarks (this takes a few minutes) --"

@@ -36,7 +36,26 @@ python3 scripts/gen_slides.py
 CHROME_PATH=<chrome> marp --no-stdin --pdf --allow-local-files --browser chrome slides.md -o slides.pdf
 ```
 
-The paper references **only B200**. `RTX_A6000/` is the dev archive.
+**Status (2026-07-31).** There is no B200 run; `results/B200/` holds only a README. The
+paper is anchored on **`results/RTX_PRO_6000_Blackwell_rerun/`**, a full reproduction on an
+RTX PRO 6000 Blackwell Server Edition that ships its own ADL logs
+(`adl_logs/cmp_*.txt`, `fused.txt`) -- the earlier `RTX_PRO_6000_Blackwell/` run kept only
+the chart and scalars, so its per-query numbers could not be re-derived. The two runs agree
+to within a few percent everywhere (Q5 at 10M: 3600x then 3634x; dimuon 88->1 kernels and
+212->45 memory ops identically). `RTX_A6000/` is the older Ada dev archive.
+
+Two environment traps cost a full run each; both are now handled in the scripts, but know
+them:
+
+1. **torch downgrades `cuda-bindings`.** Installing the cu128 torch wheel pulls
+   `cuda-bindings` 12.9.x over 13.x and adds `cuda-toolkit` 12.8. `cuda.compute` then
+   cannot build anything on sm_120 and *every* cuda.compute benchmark records `TODO`
+   while the cupy and torch bars still succeed, which reads like a cuda.compute bug.
+   `reproduce.sh` now reinstalls `cuda-bindings==13.3.1` after torch and runs a smoke
+   test that aborts rather than writing a file of TODOs.
+2. **`bench_all.sh` hardcoded `/home/coder`.** On any other host the `cd` and
+   `PYTHONPATH` pointed nowhere and all 16 ADL queries reported
+   "process crashed (no result)" at every scale. Now derived from `BASH_SOURCE`.
 
 ---
 
