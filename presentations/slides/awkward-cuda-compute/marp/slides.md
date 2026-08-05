@@ -1148,7 +1148,7 @@ binary_transform(d_in1=muons1, d_in2=muons2,
 
 <!-- Thanks, Ashwin. So that's the tool — now let me show you what it's done for Awkward, and where we're taking it.
 
-The headline first: nearly all of Awkward's CUDA kernels have moved from hand-written CUDA C++ to pure Python. A hundred and fourteen already run on cuda.compute, and the remaining seventeen are implemented too. That's most of the library's GPU backend, rewritten in Python — and a lot of the credit for that goes to Maxym Naumchyk. -->
+The headline first: nearly all of Awkward's CUDA kernels have moved from hand-written CUDA C++ to pure Python. A hundred and fourteen already run on cuda.compute, and the remaining seventeen are implemented too. That's most of the library's GPU backend, rewritten in Python — and a lot of the credit for that goes to Maksym Naumchyk. -->
 
 ## Awkward Array: present and future
 
@@ -1165,7 +1165,7 @@ The headline first: nearly all of Awkward's CUDA kernels have moved from hand-wr
 - 114 kernels use **cuda.compute**
 - Remaining **17 kernels are already implemented**
 
-<div style="font-size: 20px; color: #4c8c00">Maxym Naumchyk</div>
+<div style="font-size: 20px; color: #4c8c00">Maksym Naumchyk</div>
 
 </div>
 </div>

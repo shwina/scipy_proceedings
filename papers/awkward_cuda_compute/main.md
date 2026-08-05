@@ -55,8 +55,11 @@ packaging and deploying the library. A further missed opportunity is *kernel
 fusion* (combining steps so intermediate results stay on-chip), which is key
 to obtaining good performance.
 
-This paper reports on a collaboration between the Awkward Array and
-NVIDIA teams to rebuild Awkward's GPU backend on `cuda.compute`, a
+Earlier accounts of this work have been presented to the physics-computing community
+[@awkward-chep2026], alongside a broader report on the surrounding CPU and GPU
+developments in the Awkward backend [@awkward-acat2025]. This paper reports on a
+collaboration between
+the Awkward Array and NVIDIA teams to rebuild Awkward's GPU backend on `cuda.compute`, a
 Python library that brings NVIDIA's CUDA C++ building blocks to
 Python. `cuda.compute` exposes the algorithms and iterators of the
 CUB and Thrust C++ libraries. These are the same battle-tested,
@@ -290,17 +293,21 @@ ordinary Python function that can be read and tested without a GPU.
 
 ### Replacing C++ with Python
 
-Counting the code that must actually be maintained, the GPU backend is now mostly Python
-({numref}`fig-loc`). We count a kernel's CUDA C++ as maintained only while it is still
-dispatched as CUDA C++, treat the generated kernel-signature table as machine-produced
-rather than hand-written, and include the shared `cuda_common.cu` scaffolding (625 lines,
-unchanged) on both sides. On that basis, Awkward 2.8.11 carried 8,288 lines of
-hand-written CUDA C++ against 278 lines of Python. In Awkward 2.10.0 the CUDA C++ still
-dispatched is 2,170 lines, a 74% reduction, while the `cuda.compute` implementations and
-their dispatch come to 4,663 lines of Python. A further 4,013 lines of superseded `.cu`
-files remain in the tree pending removal; they are dead weight rather than upkeep, which
-is why they are excluded. The CUDA C++ a contributor must read has fallen by nearly
-three-quarters, and what replaced it can be read and tested without a GPU.
+What changed is not the amount of GPU code so much as the language it is written in.
+Awkward 2.8.11 carried 8,288 lines of hand-written CUDA C++ against 278 lines of Python;
+Awkward 2.12.0 dispatches 2,170 lines of CUDA C++ alongside 6,130 lines of Python
+({numref}`fig-loc`). The total is very nearly the same. What fell by roughly
+three-quarters is the portion that requires CUDA expertise to touch.
+
+That distinction decides who can contribute, and a stated goal of the Awkward Array
+project is to let physicists and data analysts write high-performance code in Python
+without GPU expertise. Adding or fixing a kernel in the old backend meant understanding
+CUDA thread hierarchies, atomics and shared-memory behaviour, and reasoning about them at
+the same time as the ragged buffer arithmetic, in a language most of the library's users
+do not write. The new backend asks for a scalar operator in Python and a call to the
+appropriate primitive: the eight lines above. What CUDA C++ remains is confined to the
+structural kernels of {numref}`tbl-coverage`, so a contributor working on a reduction, a
+sort or a statistical operator need not encounter it at all.
 
 ```{figure} loc_comparison.png
 :label: fig-loc
@@ -308,9 +315,12 @@ three-quarters, and what replaced it can be read and tested without a GPU.
 :width: 47%
 
 GPU kernel code that must be maintained, by language and Awkward version, counted from
-the source of each release. Before `cuda.compute` the backend was almost entirely CUDA
-C++ (8,288 lines against 278 of Python); in Awkward 2.10.0 the C++ still dispatched has
-fallen 74% to 2,170 lines and the backend is mostly Python.
+the source of each release. A kernel's CUDA C++ counts as maintained only while it is
+still dispatched as CUDA C++; the generated kernel-signature table is excluded as
+machine-produced, and the shared `cuda_common.cu` scaffolding (625 lines, identical in
+both releases) is included on both sides. A further 4,013 lines of superseded `.cu` files
+remain in the 2.12.0 tree pending removal and are excluded as dead weight rather than
+upkeep.
 ```
 
 ## Results
@@ -318,8 +328,7 @@ fallen 74% to 2,170 lines and the backend is mostly Python.
 All GPU measurements reported below were taken on an NVIDIA RTX PRO 6000 Blackwell
 Server Edition (GB202, compute capability 12.0, 98 GB) with CUDA 13.2, against
 `cuda.compute` 1.1.0 and CuPy 14.1.1. Source-derived counts (kernel coverage and lines of
-code) are for the released Awkward 2.10.0; the end-to-end query benchmark builds Awkward
-from `main`, which carries migration work not yet in a release. Every benchmark below was
+code) are for the released Awkward 2.12.0. Every benchmark below was
 run twice, on independent machines of the same class and in independently built
 environments. All structural quantities (kernel counts, memory-operation counts,
 serialized-blob size) came out identical, and every timing agreed to within a few percent,
@@ -331,26 +340,32 @@ The migration of the GPU backend to `cuda.compute` is tracked publicly in the pr
 issue tracker [@awkward-issue-3793]. The figures below are counted from the released
 source rather than from the tracker: a kernel counts as migrated when the CUDA backend's
 dispatch table maps its name to a `cuda.compute` implementation. On that measure, Awkward
-2.10.0 routes 106 of its 133 GPU kernels (80%) through `cuda.compute`
+2.12.0 routes 109 of its 136 GPU kernels (80%) through `cuda.compute`
 ({numref}`tbl-coverage`), up from none in 2.8.11, which had 131 hand-written kernels.
 
-Every reduction (`sum`, `prod`, `min`, `max`, `argmin`, `argmax`, `count`) and the sort
-itself now run through `cuda.compute`, with no hand-written implementation remaining. The
-27 kernels still dispatched as CUDA C++ are structural rather than numerical: alongside a
-few supporting kernels that build groupings and sorting ranges, they are the jagged
-`getitem` paths
-(`ListArray_getitem_next_*`, `ListArray_getitem_jagged_*`), padding and validity checks,
-`RegularArray` combinations, and the `UnionArray` flatten/fill operations. These are the
-cases whose control flow depends on the ragged structure itself, and so map least
-naturally onto the segmented primitives; further migration work is in progress upstream.
+Every reduction (`sum`, `prod`, `min`, `max`, `argmin`, `argmax`, `count`) and both `sort`
+and `argsort` now run through `cuda.compute`, with no hand-written implementation
+remaining. `argsort` arrived most recently [@awkward-pr-4240] and completes the set of
+kernels a physics analysis needs, so an analysis of the kind benchmarked in
+{numref}`fig-adl` can now run end to end without touching a hand-written kernel. The same
+release also added `sumofsquares` and `sumofpowers` reducers, which give overflow-safe and
+numerically stable `ak.var`, `ak.std`, `ak.moment`, `ak.corr` and `ak.covar` on the GPU
+[@awkward-pr-4232].
+
+The 27 kernels still dispatched as CUDA C++ are structural rather than numerical:
+alongside a few supporting kernels that build groupings and sorting ranges, they are the
+jagged `getitem` paths (`ListArray_getitem_next_*`, `ListArray_getitem_jagged_*`), padding
+and validity checks, `RegularArray` combinations, and the `UnionArray` flatten/fill
+operations. These are the cases whose control flow depends on the ragged structure itself,
+and so map least naturally onto the segmented primitives.
 
 ```{table} GPU kernel coverage, counted from the dispatch table of each release. The reductions and sort run exclusively through cuda.compute; what remains in CUDA C++ is structural.
 :label: tbl-coverage
 
-| Category | 2.8.11 | 2.10.0 |
+| Category | 2.8.11 | 2.12.0 |
 |---|---|---|
-| GPU kernels with a CUDA implementation | 131 | 133 |
-| Running through `cuda.compute` | 0 | 106 (80%) |
+| GPU kernels with a CUDA implementation | 131 | 136 |
+| Running through `cuda.compute` | 0 | 109 (80%) |
 | Still dispatched as CUDA C++ | 131 | 27 |
 ```
 
@@ -406,13 +421,23 @@ compute stage is essentially zero; Q8 is omitted because the baseline fails at e
 size while the new backend runs it.
 ```
 
-The two categories scale in opposite directions. The backend substitutions improve with
-problem size, Q5 rising from 60x at 100k events to 422x at 1M and 3634x at 10M and Q6
-from 45x to 250x, the `cuda.compute` time remaining approximately constant while the
-hand-written implementation grows super-linearly. The fused rewrites decline, Q7 from 32x
-to 6.0x and Q4 from 5.9x to 3.3x, their benefit deriving from eliminated launch and
-allocation overhead, which is a diminishing fraction of the total as the data grow. Q3 lies between, at 14x to
-18x.
+The two categories scale in opposite directions, and the absolute times explain why. On
+Q5 the hand-written backend takes 3.07 s at 100k events, 29.8 s at 1M and 300 s at 10M: a
+hundredfold increase in data produces a ninety-eightfold increase in time, so its cost is
+simply proportional to the number of events. Over the same range `cuda.compute` takes
+51 ms, 71 ms and 83 ms, a factor of 1.6 for that same hundredfold increase. The
+hand-written implementation extracts a fixed amount of parallelism regardless of input
+size, so more events mean more sequential work; the composed primitives instead launch
+across the whole dataset at once. At these sizes the GPU is far from saturated, and the
+additional events are absorbed by threads that would otherwise have been idle rather than
+by additional elapsed time. The speedup therefore grows almost in proportion to the
+dataset, from 60x to 3634x. Q6 behaves the same way, 3.07 s to 312 s against 69 ms to
+1.25 s; its ratio climbs less steeply (45x to 250x) only because its `cuda.compute` time
+does grow appreciably with the data.
+
+The fused rewrites move the other way, Q7 declining from 32x to 6.0x and Q4 from 5.9x to
+3.3x, their benefit deriving from eliminated launch and allocation overhead, which is a
+diminishing fraction of the total as the data grow. Q3 lies between, at 14x to 18x.
 
 The new backend is also more robust. Q8, an `argmin` over jagged data containing empty
 sublists, fails on the hand-written backend at every event count, leaving the CUDA
@@ -450,17 +475,6 @@ faster with 3.2x lower peak memory [@awkward-pr-4056].
   `cuda.compute` provides, and the library performs the kernel fusion that would
   otherwise have to be written and maintained by hand.
 
-### Lowering the Barrier to Contribution
-
-A stated goal of the Awkward Array project is to let physics and data analysts write
-high-performance code in Python without GPU expertise. The hand-written backend
-required contributors to understand CUDA thread hierarchies, atomics, and
-shared-memory behavior to add or fix a kernel. The new backend asks only for a scalar
-operator written in Python and a call to the appropriate `cuda.compute` primitive.
-That the GPU code is now *pure Python* (readable, reviewable, and testable by the
-domain scientists who use the library) is as significant as any single performance
-number.
-
 ### Limitations
 
 `cuda.compute` is still maturing, and 17 of Awkward's structural kernels are implemented
@@ -476,10 +490,28 @@ the di-muon example. Removing that requirement is the subject of the next sectio
 
 ## Future Work
 
+### Fusing Across Operations
+
+Some of the most useful fusions can be performed today by recognising specific patterns,
+with no general machinery at all. A sum of squares is the clearest example:
+written as a reduction over a squaring map, it need never materialize the squared array,
+because the map folds into the reduction through a `TransformIterator`, exactly as in the
+`min_range` kernel described earlier. Awkward now ships `sumofsquares` and `sumofpowers` reducers
+built this way [@awkward-pr-4232], and the same treatment is being extended to a *centred*
+sum of squares so that `ak.var` and `ak.std` over the innermost axis become a single fused
+kernel rather than a mean pass followed by a subtraction and a second reduction
+[@awkward-pr-4256].
+
+The gain is not only the saved buffer. These are the statistical primitives an analysis
+actually calls, so fusing them removes an intermediate array and a second pass over memory
+from ordinary user code. Each pattern recognised this way is a step toward the general
+lazy layer described next, applied to a shape the library knows in advance rather than to
+a graph the analyst wrote.
+
 ### Lazy Evaluation and Whole-Expression Fusion
 
-The most significant direction under development is a lazy execution layer that performs
-the fusion automatically [@awkward-issue-4141; @awkward-pr-4173]. Wrapping an array with
+The general form of the same idea is a lazy execution layer that performs the fusion
+automatically, without needing to recognise the pattern in advance [@awkward-issue-4141; @awkward-pr-4173]. Wrapping an array with
 `ak.cuda.lazy` defers evaluation; operations build an expression graph rather than
 launching kernels; and a terminal `compute(fuse=True)` lowers a whole chain of
 element-wise operations into a single `cuda.compute` kernel:
@@ -500,9 +532,7 @@ than one consumer is computed once and shared, which yields common-subexpression
 elimination without a separate pass. And `fuse=False` runs the same graph through a
 per-operation interpreter with numerically identical results, so fusion is a fast path
 rather than a correctness dependency; anything the compiler cannot fuse (strings, indexed
-layouts, mixed backends) falls back to the eager path automatically. The decisions are
-inspectable through `fusion_stats()` and `visualize(fused=True)`, which report how many
-element-wise nodes collapsed into how many fused regions.
+layouts, mixed backends) falls back to the eager path automatically.
 
 The performance figures published with that work are substantial (up to roughly 90x on
 the GPU for a long element-wise chain, and 2x to 8x on the CPU), and the GPU speedup is
@@ -528,7 +558,7 @@ We have presented a collaboration between the Awkward Array and NVIDIA teams tha
 rebuilds Awkward's GPU backend on `cuda.compute`. The change replaces hand-written
 CUDA C++ kernels with compositions of Python-callable primitives drawn from CUB and
 Thrust, letting the library handle fusion and per-architecture tuning. Most of Awkward's
-GPU kernels, 106 of 133, now run through `cuda.compute` (every reduction and sort
+GPU kernels, 109 of 136, now run through `cuda.compute` (every reduction and sort
 exclusively so), the hand-written CUDA C++ still dispatched has fallen by 74%, and what
 remains in C++ is structural rather than numerical.
 
@@ -547,7 +577,7 @@ both the hardware and the problem.
 ## Acknowledgements
 
 This work was supported in part by NSF grants OAC-1450377, OAC-1836650,
-OAC-2103945, PHY-2121686, and PHY-2323298. The authors thank Maxym Naumchyk, who
+OAC-2103945, PHY-2121686, and PHY-2323298. The authors thank Maksym Naumchyk, who
 implemented much of the kernel migration described here, the `cuda.compute` and
 CUB/Thrust developers at NVIDIA, and the Scikit-HEP community.
 

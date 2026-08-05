@@ -46,6 +46,11 @@ project:
         - awkward-pr-4056
         - awkward-issue-4141
         - awkward-pr-4173
+        - awkward-acat2025
+        - awkward-chep2026
+        - awkward-pr-4232
+        - awkward-pr-4240
+        - awkward-pr-4256
         - uproot
   exports:
     - id: pdf
